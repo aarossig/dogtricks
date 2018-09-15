@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-#include <cstdio>
-#include <tclap/CmdLine.h>
+#ifndef DOGTRICKS_NON_COPYABLE_H_
+#define DOGTRICKS_NON_COPYABLE_H_
 
-#include "radio.h"
+namespace dogtricks {
 
-//! A description of the program.
-constexpr char kDescription[] = "A tool for making satellite radio dogs do tricks.";
+/**
+ * A type-trait used to delete the copy-construct and copy-assignment operator.
+ */
+class NonCopyable {
+ public:
+   NonCopyable() {}
+   NonCopyable(const NonCopyable&) = delete;
+   NonCopyable& operator=(const NonCopyable&) = delete;
+};
 
-//! The version of the program.
-constexpr char kVersion[] = "0.0.1";
+}  // namespace dogtricks
 
-int main(int argc, char **argv) {
-  TCLAP::CmdLine cmd(kDescription, ' ', kVersion);
-  cmd.parse(argc, argv);
-
-  // TODO: supply a path from the command line.
-  dogtricks::Radio radio("/dev/ttyUSB0");
-
-  return 0;
-}
+#endif  // DOGTRICKS_NON_COPYABLE_H_

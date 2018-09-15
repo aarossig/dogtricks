@@ -14,23 +14,12 @@
  * limitations under the License.
  */
 
-#include <cstdio>
-#include <tclap/CmdLine.h>
-
 #include "radio.h"
 
-//! A description of the program.
-constexpr char kDescription[] = "A tool for making satellite radio dogs do tricks.";
+namespace dogtricks {
 
-//! The version of the program.
-constexpr char kVersion[] = "0.0.1";
+void Radio::OnPacketReceived() {
 
-int main(int argc, char **argv) {
-  TCLAP::CmdLine cmd(kDescription, ' ', kVersion);
-  cmd.parse(argc, argv);
-
-  // TODO: supply a path from the command line.
-  dogtricks::Radio radio("/dev/ttyUSB0");
-
-  return 0;
 }
+
+}  // namespace dogtricks

@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
+#ifndef DOGTRICKS_LOG_H_
+#define DOGTRICKS_LOG_H_
+
 #include <cstdio>
-#include <tclap/CmdLine.h>
 
-#include "radio.h"
+#define LOG_FUNC(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
 
-//! A description of the program.
-constexpr char kDescription[] = "A tool for making satellite radio dogs do tricks.";
+#define LOGD(fmt, ...) LOG_FUNC(fmt, ##__VA_ARGS__)
+#define LOGI(fmt, ...) LOG_FUNC(fmt, ##__VA_ARGS__)
+#define LOGE(fmt, ...) LOG_FUNC(fmt, ##__VA_ARGS__)
 
-//! The version of the program.
-constexpr char kVersion[] = "0.0.1";
-
-int main(int argc, char **argv) {
-  TCLAP::CmdLine cmd(kDescription, ' ', kVersion);
-  cmd.parse(argc, argv);
-
-  // TODO: supply a path from the command line.
-  dogtricks::Radio radio("/dev/ttyUSB0");
-
-  return 0;
-}
+#endif  // DOGTRICKS_LOG_H_

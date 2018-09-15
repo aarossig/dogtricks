@@ -11,4 +11,6 @@ pkg_check_modules(tclap REQUIRED tclap)
 
 add_executable(dogtricks
   main.cpp
+  radio.cpp
+  transport.cpp
 )
