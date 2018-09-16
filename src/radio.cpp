@@ -16,10 +16,49 @@
 
 #include "radio.h"
 
+#include <cinttypes>
+
+#include "log.h"
+
 namespace dogtricks {
 
-void Radio::OnPacketReceived() {
+bool Radio::Start() {
+  bool success = transport_.IsOpen();
+  if (!success) {
+    LOGE("Failed to start, transport not open");
+  } 
 
+  // TODO: Support a stop.
+  while (success) {
+    success = transport_.ReceiveFrame();
+  }
+
+  return success;
+}
+
+bool Radio::GetSignalStrength() {
+  constexpr uint16_t kGetSignalOpCode = 0x4018;
+  return SendCommand(kGetSignalOpCode);
+}
+
+bool Radio::SendCommand(uint16_t op_code,
+                        const uint8_t *command, size_t command_size,
+                        uint8_t *response, size_t response_size) {
+  bool success = transport_.SendFrame(op_code, command, command_size);
+  if (success) {
+    // TODO: Condition variable wait.
+  }
+
+  return success;
+}
+
+void Radio::OnPacketReceived(uint16_t op_code, const uint8_t *payload,
+                             size_t payload_size) {
+  LOGD("OnPacketReceived 0x%04" PRIx16, op_code);
+  if (op_code == 0x8000) {
+    LOGD("Status %" PRIx8, payload[0]);
+  }
+  // TODO: Condition variable notify, or otherwise.
 }
 
 }  // namespace dogtricks

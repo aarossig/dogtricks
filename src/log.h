@@ -18,11 +18,17 @@
 #define DOGTRICKS_LOG_H_
 
 #include <cstdio>
+#include <cstdlib>
 
 #define LOG_FUNC(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
 
 #define LOGD(fmt, ...) LOG_FUNC(fmt, ##__VA_ARGS__)
 #define LOGI(fmt, ...) LOG_FUNC(fmt, ##__VA_ARGS__)
 #define LOGE(fmt, ...) LOG_FUNC(fmt, ##__VA_ARGS__)
+
+#define FATAL_ERROR(fmt, ...) do { \
+    LOGE(fmt, ##__VA_ARGS__); \
+    abort(); \
+  } while (0);
 
 #endif  // DOGTRICKS_LOG_H_

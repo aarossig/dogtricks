@@ -40,7 +40,8 @@ class Transport : public NonCopyable {
      * packet immediately expected if a put message is sent between sending
      * a command and receiving the response.
      */
-    virtual void OnPacketReceived() = 0;
+    virtual void OnPacketReceived(uint16_t op_code, const uint8_t *payload,
+                                  size_t payload_size) = 0;
   };
 
   /**
@@ -48,12 +49,76 @@ class Transport : public NonCopyable {
    */
   Transport(const char *path, EventHandler& event_handler);
 
+  /**
+   * @return true if this transport was opened successfully.
+   */
+  bool IsOpen() const {
+    return (fd_ > 0);
+  }
+
+  /**
+   * Sends a frame to the radio with the supplied attributes.
+   *
+   * @param op_code The op code to send.
+   * @param payload The payload to send.
+   * @param size The size of the command to send.
+   */
+  bool SendFrame(uint16_t op_code, const uint8_t *payload, size_t size);
+
+  /**
+   * Receives a frame from the radio. This is a blocking call. The
+   * OnPacketReceived event handler is invoked when a frame is read.
+   */
+  bool ReceiveFrame();
+
  private:
+  //! The size of the message buffer.
+  static constexpr size_t kMessageBufferSize = UINT8_MAX + 32;
+
+  //! The size of the tx/rx frame buffers.
+  static constexpr size_t kTxRxBufferSize = UINT8_MAX + 64;
+
+  //! The sync byte used to indicate a start of message.
+  static constexpr uint8_t kSyncByte = 0xa4;
+
+  //! The escape byte used to encode a sync.
+  static constexpr uint8_t kEscapeByte = 0x1b;
+
+  //! The byte to send when encoding an enscaped sync byte.
+  static constexpr uint8_t kEscapedSyncByte = 0x53;
+
+  //! The fixed byte to indicate the protocol version.
+  static constexpr uint8_t kProtocolByte = 0x03;
+
+  //! The value for a message frame.
+  static constexpr uint8_t kMessageFrame = 0x00;
+
   //! The file descriptor used to communicate with the serial device.
   int fd_;
 
   //! The event handler for the transport.
   EventHandler& event_handler_;
+
+  /**
+   * Inserts an escaped byte into the buffer.
+   */
+  bool InsertByte(uint8_t byte, uint8_t *buffer, size_t *pos, size_t size);
+
+  /**
+   * Computes the checksum of the frame in wire-format.
+   */
+  int8_t ComputeSum(const uint8_t *buffer, size_t size);
+
+  /**
+   * Reads a byte from the serial device. This may read multiple bytes if they
+   * require escaping.
+   */
+  bool ReadByte(uint8_t *byte);
+
+  /**
+   * Reads one raw byte from the serial device.
+   */
+  uint8_t ReadRawByte();
 };
 
 }  // namespace dogtricks

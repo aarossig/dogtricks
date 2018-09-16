@@ -36,12 +36,43 @@ class Radio : public Transport::EventHandler,
    */
   Radio(const char *path) : transport_(path, *this) {}
 
+  /**
+   * Starts listening from the radio for packets if the transport was opened
+   * successfully. This function blocks or returns false.
+   *
+   * @return false if the transport is not open.
+   */
+  bool Start();
+
+  /**
+   * Sends a request for the current signal strength. Errors are logged.
+   *
+   * @return true if successful, false otherwise.
+   */
+  bool GetSignalStrength();
+
+ protected:
   // Transport::EventHandler methods.
-  virtual void OnPacketReceived() override;
+  virtual void OnPacketReceived(uint16_t op_code, const uint8_t *payload,
+                                size_t payload_size) override;
 
  private:
   //! The underlying transport to send/receive messages with.
   Transport transport_;
+
+  /**
+   * Sends a comment through the transport and populates the response buffer if
+   * supplied.
+   *
+   * @param op_code The op code to send.
+   * @param command The command payload.
+   * @param command_size The size of the command payload to send.
+   * @param response The response to populate.
+   * @param response_size The maximum size of the response.
+   */
+  bool SendCommand(uint16_t op_code,
+                   const uint8_t *command = nullptr, size_t command_size = 0,
+                   uint8_t *response = nullptr, size_t response_size = 0);
 };
 
 }  // namespace dogtricks
