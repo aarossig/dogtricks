@@ -45,6 +45,11 @@ class Radio : public Transport::EventHandler,
   bool Start();
 
   /**
+   *
+   */
+  bool SetPowerMode();
+
+  /**
    * Sends a request for the current signal strength. Errors are logged.
    *
    * @return true if successful, false otherwise.

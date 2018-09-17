@@ -16,6 +16,7 @@
 
 #include <cstdio>
 #include <tclap/CmdLine.h>
+#include <thread>
 
 #include "radio.h"
 
@@ -31,7 +32,15 @@ int main(int argc, char **argv) {
 
   // TODO: supply a path from the command line.
   dogtricks::Radio radio("/dev/ttyUSB0");
-  radio.Start();
+
+  std::thread receive_thread([&radio](){
+    radio.Start();
+  });
+
+  radio.SetPowerMode();
+  //radio.GetSignalStrength();
+
+  receive_thread.join();
 
   return 0;
 }

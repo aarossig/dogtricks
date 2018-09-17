@@ -36,6 +36,12 @@ bool Radio::Start() {
   return success;
 }
 
+bool Radio::SetPowerMode() {
+  constexpr uint16_t kSetPowerMode = 0x0008;
+  uint8_t payload[] = { 0x03, };
+  return SendCommand(kSetPowerMode, payload, sizeof(payload));
+}
+
 bool Radio::GetSignalStrength() {
   constexpr uint16_t kGetSignalOpCode = 0x4018;
   return SendCommand(kGetSignalOpCode);
@@ -44,7 +50,7 @@ bool Radio::GetSignalStrength() {
 bool Radio::SendCommand(uint16_t op_code,
                         const uint8_t *command, size_t command_size,
                         uint8_t *response, size_t response_size) {
-  bool success = transport_.SendFrame(op_code, command, command_size);
+  bool success = transport_.SendMessageFrame(op_code, command, command_size);
   if (success) {
     // TODO: Condition variable wait.
   }
@@ -57,6 +63,10 @@ void Radio::OnPacketReceived(uint16_t op_code, const uint8_t *payload,
   LOGD("OnPacketReceived 0x%04" PRIx16, op_code);
   if (op_code == 0x8000) {
     LOGD("Status %" PRIx8, payload[0]);
+  } else {
+    for (size_t i = 0; i < payload_size; i++) {
+      LOGD("%zu %" PRIx8, i, payload[i]);
+    }
   }
   // TODO: Condition variable notify, or otherwise.
 }

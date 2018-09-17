@@ -63,7 +63,7 @@ class Transport : public NonCopyable {
    * @param payload The payload to send.
    * @param size The size of the command to send.
    */
-  bool SendFrame(uint16_t op_code, const uint8_t *payload, size_t size);
+  bool SendMessageFrame(uint16_t op_code, const uint8_t *payload, size_t size);
 
   /**
    * Receives a frame from the radio. This is a blocking call. The
@@ -93,11 +93,24 @@ class Transport : public NonCopyable {
   //! The value for a message frame.
   static constexpr uint8_t kMessageFrame = 0x00;
 
+  //! The value for an Ack frame.
+  static constexpr uint8_t kAckFrame = 0x80;
+
   //! The file descriptor used to communicate with the serial device.
   int fd_;
 
   //! The event handler for the transport.
   EventHandler& event_handler_;
+
+  /**
+   * TODO: Docs.
+   */
+  bool SendAckFrame(uint8_t sequence_number);
+
+  /**
+   * TODO: Docs.
+   */
+  bool SendFrame(const uint8_t *frame, size_t size);
 
   /**
    * Inserts an escaped byte into the buffer.
