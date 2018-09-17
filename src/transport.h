@@ -102,6 +102,11 @@ class Transport : public NonCopyable {
   //! The event handler for the transport.
   EventHandler& event_handler_;
 
+  //! The next sequence number to use when sending a message payload. This
+  //! increments and wraps across 255. This is required as it seems the device
+  //! does not handle a fixed sequence number.
+  uint8_t sequence_number_ = 0;
+
   /**
    * TODO: Docs.
    */

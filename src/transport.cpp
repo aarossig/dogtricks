@@ -80,7 +80,7 @@ bool Transport::SendMessageFrame(uint16_t op_code, const uint8_t *payload,
   message_buffer[message_pos++] = kSyncByte;
   message_buffer[message_pos++] = kProtocolByte;
   message_buffer[message_pos++] = 0x00;
-  message_buffer[message_pos++] = 2;
+  message_buffer[message_pos++] = sequence_number_++;
   message_buffer[message_pos++] = kMessageFrame;
   message_buffer[message_pos++] = static_cast<uint8_t>(size) + 2;
 
@@ -127,28 +127,30 @@ bool Transport::ReceiveFrame() {
   int8_t received_sum = message_buffer[pos - 1];
 
   success = false;
-  uint8_t sequence_number = message_buffer[3];
-  uint8_t frame_type = message_buffer[4];
-
-  LOGD("Received seq %" PRIu8, sequence_number);
-  if (frame_type == kMessageFrame) {
-    SendAckFrame(sequence_number);
-    if (computed_sum + received_sum != 0) {
-      LOGE("Invalid checksum");
-    } else if (message_buffer[5] < 2) {
-      LOGE("Frame with short payload %" PRIu8, message_buffer[5]);
-    } else {
-      uint16_t op_code = (message_buffer[6] << 8) | message_buffer[7];
-      uint8_t *payload = &message_buffer[8];
-      size_t payload_size = message_buffer[5] - 2;
-      event_handler_.OnPacketReceived(op_code, payload, payload_size);
-      success = true;
-    }
-  } else if (frame_type == kAckFrame) {
-    LOGD("Received Ack");
-    success = true;
+  if (static_cast<uint8_t>(computed_sum + received_sum) != 0) {
+    LOGE("Invalid checksum %" PRId8 " vs %" PRId8, computed_sum, received_sum);
   } else {
-    LOGD("Received frame type %" PRIu8, frame_type);
+    uint8_t sequence_number = message_buffer[3];
+    uint8_t frame_type = message_buffer[4];
+    LOGD("Received seq %" PRIu8, sequence_number);
+
+    if (frame_type == kMessageFrame) {
+      SendAckFrame(sequence_number);
+      if (message_buffer[5] < 2) {
+        LOGE("Frame with short payload %" PRIu8, message_buffer[5]);
+      } else {
+        uint16_t op_code = (message_buffer[6] << 8) | message_buffer[7];
+        uint8_t *payload = &message_buffer[8];
+        size_t payload_size = message_buffer[5] - 2;
+        event_handler_.OnPacketReceived(op_code, payload, payload_size);
+        success = true;
+      }
+    } else if (frame_type == kAckFrame) {
+      LOGD("Received Ack");
+      success = true;
+    } else {
+      LOGD("Received frame type %" PRIu8, frame_type);
+    }
   }
 
   return success;
