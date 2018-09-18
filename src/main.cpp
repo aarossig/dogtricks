@@ -36,7 +36,6 @@ int main(int argc, char **argv) {
 
   // TODO: supply a path from the command line.
   Radio radio("/dev/ttyUSB0");
-
   std::thread receive_thread([&radio](){
     radio.Start();
   });

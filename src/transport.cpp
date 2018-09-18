@@ -98,7 +98,7 @@ void Transport::SendMessageFrame(OpCode op_code, const uint8_t *payload,
   SendFrame(message_buffer, message_pos);
 }
 
-bool Transport::ReceiveFrame() {
+void Transport::ReceiveFrame() {
   // Sync to the next frame.
   uint8_t message_buffer[kMessageBufferSize] = {};
   while ((message_buffer[0] = ReadRawByte()) != kSyncByte) {}
@@ -124,7 +124,6 @@ bool Transport::ReceiveFrame() {
   int8_t computed_sum = ComputeSum(message_buffer, pos - 1);
   int8_t received_sum = message_buffer[pos - 1];
 
-  success = false;
   if (static_cast<uint8_t>(computed_sum + received_sum) != 0) {
     LOGE("Invalid checksum %" PRId8 " vs %" PRId8, computed_sum, received_sum);
   } else {
@@ -140,16 +139,13 @@ bool Transport::ReceiveFrame() {
         uint8_t *payload = &message_buffer[8];
         size_t payload_size = message_buffer[5] - 2;
         event_handler_.OnPacketReceived(op_code, payload, payload_size);
-        success = true;
       }
     } else if (frame_type == kAckFrame) {
-      success = true;
+      // TODO: Handle this and other Nack frames.
     } else {
       LOGD("Received frame type %" PRIu8, frame_type);
     }
   }
-
-  return success;
 }
 
 void Transport::SendAckFrame(uint8_t sequence_number) {

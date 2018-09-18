@@ -81,7 +81,7 @@ class Transport : public NonCopyable {
    * Receives a frame from the radio. This is a blocking call. The
    * OnPacketReceived event handler is invoked when a frame is read.
    */
-  bool ReceiveFrame();
+  void ReceiveFrame();
 
  private:
   //! The size of the message buffer.

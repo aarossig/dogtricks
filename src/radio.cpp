@@ -34,7 +34,7 @@ bool Radio::Start() {
 
   // TODO: Support a stop.
   while (success) {
-    success = transport_.ReceiveFrame();
+    transport_.ReceiveFrame();
   }
 
   return success;
@@ -101,7 +101,6 @@ bool Radio::SendCommand(Transport::OpCode request_op_code,
 
 void Radio::OnPacketReceived(Transport::OpCode op_code, const uint8_t *payload,
                              size_t payload_size) {
-  LOGD("OnPacketReceived 0x%04" PRIx16, op_code);
   if (op_code == response_op_code_) {
     // If the supplied response buffer is too small, this is an error and it
     // must be increased in size.
@@ -109,7 +108,7 @@ void Radio::OnPacketReceived(Transport::OpCode op_code, const uint8_t *payload,
     memcpy(response_, payload, payload_size);
     cv_.notify_one();
   } else {
-    // TODO: Parse other messages.
+    LOGD("Unhandled op code: 0x%04" PRIx16, op_code);
   }
 }
 
