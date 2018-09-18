@@ -26,7 +26,7 @@ bool Radio::Start() {
   bool success = transport_.IsOpen();
   if (!success) {
     LOGE("Failed to start, transport not open");
-  } 
+  }
 
   // TODO: Support a stop.
   while (success) {
@@ -40,6 +40,12 @@ bool Radio::SetPowerMode() {
   constexpr uint16_t kSetPowerMode = 0x0008;
   uint8_t payload[] = { 0x03, };
   return SendCommand(kSetPowerMode, payload, sizeof(payload));
+}
+
+bool Radio::SetChannel(uint8_t channel_id) {
+  constexpr uint16_t kSetChannel = 0x000a;
+  uint8_t payload[] = { channel_id, 0, 0, 0 };
+  return SendCommand(kSetChannel, payload, sizeof(payload));
 }
 
 bool Radio::GetSignalStrength() {

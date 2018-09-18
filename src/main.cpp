@@ -18,6 +18,8 @@
 #include <tclap/CmdLine.h>
 #include <thread>
 
+#include <unistd.h>
+
 #include "radio.h"
 
 //! A description of the program.
@@ -38,7 +40,14 @@ int main(int argc, char **argv) {
   });
 
   radio.SetPowerMode();
-  //radio.GetSignalStrength();
+
+  usleep(200000);
+
+  radio.GetSignalStrength();
+
+  usleep(200000);
+
+  radio.SetChannel(51);
 
   receive_thread.join();
 
