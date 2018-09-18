@@ -30,6 +30,18 @@ namespace dogtricks {
 class Transport : public NonCopyable {
  public:
   /**
+   * The operation codes that are used when communicating with the radio.
+   */
+  enum class OpCode : uint16_t {
+    SetPowerModeRequest = 0x0008,
+    SetChannelRequest = 0x000a,
+    SetPowerModeResponse = 0x2008,
+    SetChannelResponse = 0x200a,
+    GetSignalRequest = 0x4018,
+    GetSignalResponse = 0x6018,
+  };
+
+  /**
    * The event handler for the transport to notify the application layers of
    * status changes.
    */
@@ -40,7 +52,7 @@ class Transport : public NonCopyable {
      * packet immediately expected if a put message is sent between sending
      * a command and receiving the response.
      */
-    virtual void OnPacketReceived(uint16_t op_code, const uint8_t *payload,
+    virtual void OnPacketReceived(OpCode op_code, const uint8_t *payload,
                                   size_t payload_size) = 0;
   };
 
@@ -63,7 +75,7 @@ class Transport : public NonCopyable {
    * @param payload The payload to send.
    * @param size The size of the command to send.
    */
-  bool SendMessageFrame(uint16_t op_code, const uint8_t *payload, size_t size);
+  void SendMessageFrame(OpCode op_code, const uint8_t *payload, size_t size);
 
   /**
    * Receives a frame from the radio. This is a blocking call. The
@@ -110,12 +122,12 @@ class Transport : public NonCopyable {
   /**
    * TODO: Docs.
    */
-  bool SendAckFrame(uint8_t sequence_number);
+  void SendAckFrame(uint8_t sequence_number);
 
   /**
    * TODO: Docs.
    */
-  bool SendFrame(const uint8_t *frame, size_t size);
+  void SendFrame(const uint8_t *frame, size_t size);
 
   /**
    * Inserts an escaped byte into the buffer.

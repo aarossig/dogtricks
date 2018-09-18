@@ -36,43 +36,49 @@ bool Radio::Start() {
   return success;
 }
 
-bool Radio::SetPowerMode() {
-  constexpr uint16_t kSetPowerMode = 0x0008;
-  uint8_t payload[] = { 0x03, };
-  return SendCommand(kSetPowerMode, payload, sizeof(payload));
+bool Radio::SetPowerMode(PowerState power_state) {
+  uint8_t payload[] = { static_cast<uint8_t>(power_state), };
+  uint8_t response[4];
+  SendCommand(Transport::OpCode::SetPowerModeRequest,
+              Transport::OpCode::SetPowerModeRequest,
+              payload, sizeof(payload),
+              response, sizeof(response));
+  return true;
 }
 
 bool Radio::SetChannel(uint8_t channel_id) {
-  constexpr uint16_t kSetChannel = 0x000a;
   uint8_t payload[] = { channel_id, 0, 0, 0 };
-  return SendCommand(kSetChannel, payload, sizeof(payload));
+  uint8_t response[100];
+  SendCommand(Transport::OpCode::SetChannelRequest,
+              Transport::OpCode::SetChannelResponse,
+              payload, sizeof(payload),
+              response, sizeof(response));
+  return true;
 }
 
 bool Radio::GetSignalStrength() {
-  constexpr uint16_t kGetSignalOpCode = 0x4018;
-  return SendCommand(kGetSignalOpCode);
+  uint8_t response[6];
+  SendCommand(Transport::OpCode::GetSignalRequest,
+              Transport::OpCode::GetSignalResponse,
+              nullptr, 0, response, sizeof(response));
+  return true;
 }
 
-bool Radio::SendCommand(uint16_t op_code,
+void Radio::SendCommand(Transport::OpCode request_op_code,
+                        Transport::OpCode response_op_code,
                         const uint8_t *command, size_t command_size,
                         uint8_t *response, size_t response_size) {
-  bool success = transport_.SendMessageFrame(op_code, command, command_size);
-  if (success) {
-    // TODO: Condition variable wait.
-  }
+  transport_.SendMessageFrame(request_op_code, command, command_size);
 
-  return success;
+  // TODO: Condition variable stuff.
 }
 
-void Radio::OnPacketReceived(uint16_t op_code, const uint8_t *payload,
+void Radio::OnPacketReceived(Transport::OpCode op_code, const uint8_t *payload,
                              size_t payload_size) {
   LOGD("OnPacketReceived 0x%04" PRIx16, op_code);
-  if (op_code == 0x8000) {
-    LOGD("Status %" PRIx8, payload[0]);
-  } else {
-    for (size_t i = 0; i < payload_size; i++) {
-      LOGD("%zu %" PRIx8, i, payload[i]);
-    }
+
+  for (size_t i = 0; i < payload_size; i++) {
+    LOGD("%zu %" PRIx8, i, payload[i]);
   }
   // TODO: Condition variable notify, or otherwise.
 }

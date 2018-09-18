@@ -28,18 +28,20 @@ constexpr char kDescription[] = "A tool for making satellite radio dogs do trick
 //! The version of the program.
 constexpr char kVersion[] = "0.0.1";
 
+using dogtricks::Radio;
+
 int main(int argc, char **argv) {
   TCLAP::CmdLine cmd(kDescription, ' ', kVersion);
   cmd.parse(argc, argv);
 
   // TODO: supply a path from the command line.
-  dogtricks::Radio radio("/dev/ttyUSB0");
+  Radio radio("/dev/ttyUSB0");
 
   std::thread receive_thread([&radio](){
     radio.Start();
   });
 
-  radio.SetPowerMode();
+  radio.SetPowerMode(Radio::PowerState::FullMode);
 
   usleep(200000);
 

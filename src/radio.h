@@ -30,6 +30,18 @@ class Radio : public Transport::EventHandler,
               public NonCopyable {
  public:
   /**
+   * The possible power states of the radio.
+   */
+  enum class PowerState : uint8_t {
+    //! Put the receiver in sleep mode. This is reduced power and does not
+    //! support receiving broadcast audio.
+    SleepMode = 0x00,
+
+    //! Power on the receiver. This mode permits receiving broadcast audio.
+    FullMode = 0x03,
+  };
+
+  /**
    * Setup the radio object with the desired link.
    * 
    * @param path The path to the serial device to communicate with.
@@ -45,9 +57,11 @@ class Radio : public Transport::EventHandler,
   bool Start();
 
   /**
+   * Sets the power state of the radio.
    *
+   * @param power_state The power state to set to.
    */
-  bool SetPowerMode();
+  bool SetPowerMode(PowerState power_state);
 
   /**
    *
@@ -63,7 +77,8 @@ class Radio : public Transport::EventHandler,
 
  protected:
   // Transport::EventHandler methods.
-  virtual void OnPacketReceived(uint16_t op_code, const uint8_t *payload,
+  virtual void OnPacketReceived(Transport::OpCode op_code,
+                                const uint8_t *payload,
                                 size_t payload_size) override;
 
  private:
@@ -74,15 +89,17 @@ class Radio : public Transport::EventHandler,
    * Sends a comment through the transport and populates the response buffer if
    * supplied.
    *
-   * @param op_code The op code to send.
+   * @param request_op_code The request op code.
+   * @param response_op_code The expected response op code.
    * @param command The command payload.
    * @param command_size The size of the command payload to send.
    * @param response The response to populate.
    * @param response_size The maximum size of the response.
    */
-  bool SendCommand(uint16_t op_code,
-                   const uint8_t *command = nullptr, size_t command_size = 0,
-                   uint8_t *response = nullptr, size_t response_size = 0);
+  void SendCommand(Transport::OpCode request_op_code,
+                   Transport::OpCode response_op_code,
+                   const uint8_t *command, size_t command_size,
+                   uint8_t *response, size_t response_size);
 };
 
 }  // namespace dogtricks

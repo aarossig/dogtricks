@@ -70,7 +70,7 @@ Transport::Transport(const char *path, EventHandler& event_handler)
   }
 }
 
-bool Transport::SendMessageFrame(uint16_t op_code, const uint8_t *payload,
+void Transport::SendMessageFrame(OpCode op_code, const uint8_t *payload,
                                  size_t size) {
   assert(size <= UINT8_MAX);
 
@@ -84,8 +84,8 @@ bool Transport::SendMessageFrame(uint16_t op_code, const uint8_t *payload,
   message_buffer[message_pos++] = kMessageFrame;
   message_buffer[message_pos++] = static_cast<uint8_t>(size) + 2;
 
-  message_buffer[message_pos++] = op_code >> 8;
-  message_buffer[message_pos++] = op_code;
+  message_buffer[message_pos++] = static_cast<uint16_t>(op_code) >> 8;
+  message_buffer[message_pos++] = static_cast<uint16_t>(op_code);
 
   // Copy the payload into the message.
   memcpy(&message_buffer[message_pos], payload, size);
@@ -95,7 +95,7 @@ bool Transport::SendMessageFrame(uint16_t op_code, const uint8_t *payload,
   int8_t checksum = ComputeSum(message_buffer, message_pos);
   message_buffer[message_pos++] = -checksum;
 
-  return SendFrame(message_buffer, message_pos);
+  SendFrame(message_buffer, message_pos);
 }
 
 bool Transport::ReceiveFrame() {
@@ -139,7 +139,8 @@ bool Transport::ReceiveFrame() {
       if (message_buffer[5] < 2) {
         LOGE("Frame with short payload %" PRIu8, message_buffer[5]);
       } else {
-        uint16_t op_code = (message_buffer[6] << 8) | message_buffer[7];
+        auto op_code = static_cast<OpCode>(
+            (message_buffer[6] << 8) | message_buffer[7]);
         uint8_t *payload = &message_buffer[8];
         size_t payload_size = message_buffer[5] - 2;
         event_handler_.OnPacketReceived(op_code, payload, payload_size);
@@ -156,7 +157,7 @@ bool Transport::ReceiveFrame() {
   return success;
 }
 
-bool Transport::SendAckFrame(uint8_t sequence_number) {
+void Transport::SendAckFrame(uint8_t sequence_number) {
   LOGD("Acking %" PRIu8, sequence_number);
 
   // Setup the message header.
@@ -172,20 +173,20 @@ bool Transport::SendAckFrame(uint8_t sequence_number) {
   // Insert the checksum.
   int8_t checksum = ComputeSum(message_buffer, message_pos);
   message_buffer[message_pos++] = -checksum;
-  return SendFrame(message_buffer, message_pos);
+  SendFrame(message_buffer, message_pos);
 }
 
-bool Transport::SendFrame(const uint8_t *frame, size_t size) {
+void Transport::SendFrame(const uint8_t *frame, size_t size) {
   bool success = true;
-  size_t tx_buffer_pos = 1;
+  size_t tx_buffer_pos = 0;
   uint8_t tx_buffer[kTxRxBufferSize];
-  tx_buffer[0] = kSyncByte;
+  tx_buffer[tx_buffer_pos++] = kSyncByte;
   for (size_t i = 1; success && i < size; i++) {
     success &= InsertByte(frame[i], tx_buffer, &tx_buffer_pos,
                           sizeof(tx_buffer));
-    if (!success) {
-      LOGE("Insufficient space for frame");
-    }
+    // If a byte fails to insert, this is programming error and the buffer must
+    // be increased in size.
+    assert(success);
   }
 
   if (success) {
@@ -201,8 +202,6 @@ bool Transport::SendFrame(const uint8_t *frame, size_t size) {
       }
     }
   }
-
-  return success;
 }
 
 bool Transport::InsertByte(uint8_t byte, uint8_t *buffer,
