@@ -42,13 +42,7 @@ int main(int argc, char **argv) {
   });
 
   radio.SetPowerMode(Radio::PowerState::FullMode);
-
-  usleep(200000);
-
   radio.GetSignalStrength();
-
-  usleep(200000);
-
   radio.SetChannel(51);
 
   receive_thread.join();

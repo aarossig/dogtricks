@@ -16,9 +16,13 @@
 
 #include "radio.h"
 
+#include <cassert>
 #include <cinttypes>
+#include <cstring>
 
 #include "log.h"
+
+using namespace std::chrono_literals;
 
 namespace dogtricks {
 
@@ -39,48 +43,74 @@ bool Radio::Start() {
 bool Radio::SetPowerMode(PowerState power_state) {
   uint8_t payload[] = { static_cast<uint8_t>(power_state), };
   uint8_t response[4];
-  SendCommand(Transport::OpCode::SetPowerModeRequest,
-              Transport::OpCode::SetPowerModeRequest,
-              payload, sizeof(payload),
-              response, sizeof(response));
-  return true;
+  bool success = SendCommand(
+      Transport::OpCode::SetPowerModeRequest,
+      Transport::OpCode::SetPowerModeResponse,
+      payload, sizeof(payload), response, sizeof(response), 100ms);
+  if (success) {
+  }
+
+  return success;
 }
 
 bool Radio::SetChannel(uint8_t channel_id) {
   uint8_t payload[] = { channel_id, 0, 0, 0 };
   uint8_t response[100];
-  SendCommand(Transport::OpCode::SetChannelRequest,
-              Transport::OpCode::SetChannelResponse,
-              payload, sizeof(payload),
-              response, sizeof(response));
-  return true;
+  bool success = SendCommand(
+      Transport::OpCode::SetChannelRequest,
+      Transport::OpCode::SetChannelResponse,
+      payload, sizeof(payload), response, sizeof(response), 100ms);
+  if (success) {
+
+  }
+
+  return success;
 }
 
 bool Radio::GetSignalStrength() {
   uint8_t response[6];
-  SendCommand(Transport::OpCode::GetSignalRequest,
-              Transport::OpCode::GetSignalResponse,
-              nullptr, 0, response, sizeof(response));
-  return true;
+  bool success = SendCommand(
+      Transport::OpCode::GetSignalRequest,
+      Transport::OpCode::GetSignalResponse,
+      nullptr, 0, response, sizeof(response), 100ms);
+  if (success) {
+
+  }
+
+  return success;
 }
 
-void Radio::SendCommand(Transport::OpCode request_op_code,
+bool Radio::SendCommand(Transport::OpCode request_op_code,
                         Transport::OpCode response_op_code,
                         const uint8_t *command, size_t command_size,
-                        uint8_t *response, size_t response_size) {
-  transport_.SendMessageFrame(request_op_code, command, command_size);
+                        uint8_t *response, size_t response_size,
+                        std::chrono::milliseconds timeout) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  response_op_code_ = response_op_code;
+  response_ = response;
+  response_size_ = response_size;
 
-  // TODO: Condition variable stuff.
+  transport_.SendMessageFrame(request_op_code, command, command_size);
+  bool timed_out = (cv_.wait_for(lock, timeout) == std::cv_status::timeout);
+  if (timed_out) {
+    LOGE("Request 0x%04" PRIx16 " timed out", request_op_code);
+  }
+
+  return !timed_out;
 }
 
 void Radio::OnPacketReceived(Transport::OpCode op_code, const uint8_t *payload,
                              size_t payload_size) {
   LOGD("OnPacketReceived 0x%04" PRIx16, op_code);
-
-  for (size_t i = 0; i < payload_size; i++) {
-    LOGD("%zu %" PRIx8, i, payload[i]);
+  if (op_code == response_op_code_) {
+    // If the supplied response buffer is too small, this is an error and it
+    // must be increased in size.
+    assert(response_size_ >= payload_size);
+    memcpy(response_, payload, payload_size);
+    cv_.notify_one();
+  } else {
+    // TODO: Parse other messages.
   }
-  // TODO: Condition variable notify, or otherwise.
 }
 
 }  // namespace dogtricks

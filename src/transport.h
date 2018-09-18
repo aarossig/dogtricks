@@ -34,8 +34,8 @@ class Transport : public NonCopyable {
    */
   enum class OpCode : uint16_t {
     SetPowerModeRequest = 0x0008,
-    SetChannelRequest = 0x000a,
     SetPowerModeResponse = 0x2008,
+    SetChannelRequest = 0x000a,
     SetChannelResponse = 0x200a,
     GetSignalRequest = 0x4018,
     GetSignalResponse = 0x6018,

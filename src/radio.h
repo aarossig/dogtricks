@@ -17,6 +17,9 @@
 #ifndef DOGTRICKS_RADIO_H_
 #define DOGTRICKS_RADIO_H_
 
+#include <condition_variable>
+#include <mutex>
+
 #include "non_copyable.h"
 #include "transport.h"
 
@@ -85,6 +88,21 @@ class Radio : public Transport::EventHandler,
   //! The underlying transport to send/receive messages with.
   Transport transport_;
 
+  //! The mutex to lock shared state.
+  std::mutex mutex_;
+
+  //! The condition variable used to resume a waiting command.
+  std::condition_variable cv_;
+
+  //! The expected response to the current outstanding message.
+  Transport::OpCode response_op_code_;
+
+  //! The response buffer to populate with the next response if matching.
+  uint8_t *response_;
+
+  //! The size of the response buffer to populate.
+  size_t response_size_;
+
   /**
    * Sends a comment through the transport and populates the response buffer if
    * supplied.
@@ -95,11 +113,14 @@ class Radio : public Transport::EventHandler,
    * @param command_size The size of the command payload to send.
    * @param response The response to populate.
    * @param response_size The maximum size of the response.
+   * @param timeout The amount of time to spend waiting for the response.
+   * @return true if successful, false on timeout.
    */
-  void SendCommand(Transport::OpCode request_op_code,
+  bool SendCommand(Transport::OpCode request_op_code,
                    Transport::OpCode response_op_code,
                    const uint8_t *command, size_t command_size,
-                   uint8_t *response, size_t response_size);
+                   uint8_t *response, size_t response_size,
+                   std::chrono::milliseconds timeout);
 };
 
 }  // namespace dogtricks

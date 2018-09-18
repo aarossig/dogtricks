@@ -99,8 +99,6 @@ void Transport::SendMessageFrame(OpCode op_code, const uint8_t *payload,
 }
 
 bool Transport::ReceiveFrame() {
-  LOGD("receiving");
-
   // Sync to the next frame.
   uint8_t message_buffer[kMessageBufferSize] = {};
   while ((message_buffer[0] = ReadRawByte()) != kSyncByte) {}
@@ -132,8 +130,6 @@ bool Transport::ReceiveFrame() {
   } else {
     uint8_t sequence_number = message_buffer[3];
     uint8_t frame_type = message_buffer[4];
-    LOGD("Received seq %" PRIu8, sequence_number);
-
     if (frame_type == kMessageFrame) {
       SendAckFrame(sequence_number);
       if (message_buffer[5] < 2) {
@@ -147,7 +143,6 @@ bool Transport::ReceiveFrame() {
         success = true;
       }
     } else if (frame_type == kAckFrame) {
-      LOGD("Received Ack");
       success = true;
     } else {
       LOGD("Received frame type %" PRIu8, frame_type);
@@ -158,8 +153,6 @@ bool Transport::ReceiveFrame() {
 }
 
 void Transport::SendAckFrame(uint8_t sequence_number) {
-  LOGD("Acking %" PRIu8, sequence_number);
-
   // Setup the message header.
   size_t message_pos = 0;
   uint8_t message_buffer[kMessageBufferSize];
