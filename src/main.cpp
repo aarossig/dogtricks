@@ -15,10 +15,9 @@
  */
 
 #include <cstdio>
+#include <string>
 #include <tclap/CmdLine.h>
 #include <thread>
-
-#include <unistd.h>
 
 #include "radio.h"
 
@@ -32,10 +31,12 @@ using dogtricks::Radio;
 
 int main(int argc, char **argv) {
   TCLAP::CmdLine cmd(kDescription, ' ', kVersion);
+  TCLAP::ValueArg<std::string> path_arg("", "path",
+      "the path of the serial device to communicate with",
+      false /* req */, "/dev/ttyUSB0", "path", cmd);
   cmd.parse(argc, argv);
 
-  // TODO: supply a path from the command line.
-  Radio radio("/dev/ttyUSB0");
+  Radio radio(path_arg.getValue().c_str());
   std::thread receive_thread([&radio](){
     radio.Start();
   });

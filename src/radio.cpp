@@ -28,9 +28,6 @@ namespace dogtricks {
 
 bool Radio::Start() {
   bool success = transport_.IsOpen();
-  if (!success) {
-    LOGE("Failed to start, transport not open");
-  }
 
   // TODO: Support a stop.
   while (success) {
