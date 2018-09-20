@@ -65,6 +65,12 @@ Transport::Transport(const char *path, EventHandler& event_handler)
   }
 }
 
+Transport::~Transport() {
+  if (IsOpen()) {
+    close(fd_);
+  }
+}
+
 bool Transport::Start() {
   receiving_ = (fd_ > 0);
   bool running = receiving_;

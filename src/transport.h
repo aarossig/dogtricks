@@ -62,6 +62,11 @@ class Transport : public NonCopyable {
   Transport(const char *path, EventHandler& event_handler);
 
   /**
+   * Clean up after the transport. Close the file for the serial device.
+   */
+  ~Transport();
+
+  /**
    * Starts reception of frames from the device.
    *
    * @return true if the transport is open, false otherwise.

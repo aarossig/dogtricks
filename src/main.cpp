@@ -34,6 +34,9 @@ constexpr char kVersion[] = "0.0.1";
 //! The radio instance that will be stopped when SIGINT is raised.
 Radio *gRadioInstance = nullptr;
 
+/**
+ * Handle signals to stop the radio receive loop gracefully.
+ */
 void SignalHandler(int signal) {
   if (gRadioInstance != nullptr) {
     LOGD("Stopping");
