@@ -35,11 +35,37 @@ class Transport : public NonCopyable {
   enum class OpCode : uint16_t {
     SetPowerModeRequest = 0x0008,
     SetPowerModeResponse = 0x2008,
+    SetResetRequest = 0x0009,
+    SetResetResponse = 0x2009,
     SetChannelRequest = 0x000a,
     SetChannelResponse = 0x200a,
     GetSignalRequest = 0x4018,
     GetSignalResponse = 0x6018,
+    PutModuleReadyResponse = 0x8000,
   };
+
+  /**
+   * Possible status codes returned by the radio.
+   */
+  enum class Status : uint16_t {
+    Success = 0,
+  };
+
+  /**
+   * Unpacks a uint16_t from the supplied buffer. The length is assumed to be
+   * at least two.
+   */
+  static uint16_t UnpackUInt16(uint8_t *buffer) {
+    return ((buffer[1] << 8) | buffer[0]);
+  }
+
+  /**
+   * Unpacks a status from the supplied buffer. The length is assumed to be
+   * at least two.
+   */
+  static Status UnpackStatus(uint8_t *buffer) {
+    return static_cast<Status>(UnpackUInt16(buffer));
+  }
 
   /**
    * The event handler for the transport to notify the application layers of

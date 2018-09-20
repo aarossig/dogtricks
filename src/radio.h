@@ -74,6 +74,11 @@ class Radio : public Transport::EventHandler,
   }
 
   /**
+   * Issues a reset to the device.
+   */
+  bool Reset();
+
+  /**
    * Sets the power state of the radio.
    *
    * @param power_state The power state to set to.
@@ -135,6 +140,20 @@ class Radio : public Transport::EventHandler,
                    const uint8_t *command, size_t command_size,
                    uint8_t *response, size_t response_size,
                    std::chrono::milliseconds timeout);
+
+  /**
+   * Waits for the supplied put command and populates the put buffer if
+   * supplied.
+   *
+   * @param put_op_code The put op code.
+   * @param put The buffer to populate with the contents of the put.
+   * @param put_size The size of the put buffer.
+   * @param timeout The amount of time to spend waiting for the put.
+   * @return true if successful, false on timeout.
+   */
+  bool WaitPut(Transport::OpCode put_op_code,
+               uint8_t *put, size_t put_size,
+               std::chrono::milliseconds timeout);
 };
 
 }  // namespace dogtricks

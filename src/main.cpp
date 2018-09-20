@@ -49,6 +49,8 @@ int main(int argc, char **argv) {
   TCLAP::ValueArg<std::string> path_arg("", "path",
       "the path of the serial device to communicate with",
       false /* req */, "/dev/ttyUSB0", "path", cmd);
+  TCLAP::SwitchArg reset_arg("", "reset",
+      "reset the radio before executing other commands", cmd);
   cmd.parse(argc, argv);
 
   Radio radio(path_arg.getValue().c_str());
@@ -61,7 +63,12 @@ int main(int argc, char **argv) {
   gRadioInstance = &radio;
   std::signal(SIGINT, SignalHandler);
 
-  if (radio.IsOpen()) {
+  bool success = radio.IsOpen();
+  if (success) {
+    if (reset_arg.isSet()) {
+      success &= radio.Reset();
+    }
+
     radio.SetPowerMode(Radio::PowerState::FullMode);
     radio.GetSignalStrength();
     radio.SetChannel(51);
@@ -70,5 +77,5 @@ int main(int argc, char **argv) {
   radio.Stop();
   receive_thread.join();
 
-  return (radio.IsOpen() ? 0 : -1);
+  return (success ? 0 : -1);
 }
