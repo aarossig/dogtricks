@@ -77,7 +77,11 @@ bool Radio::SetChannel(uint8_t channel_id) {
       Transport::OpCode::SetChannelResponse,
       payload, sizeof(payload), response, sizeof(response), 100ms);
   if (success) {
-
+    auto status = Transport::UnpackStatus(response);
+    success = (status == Transport::Status::Success);
+    if (!success) {
+      LOGE("Set channel request failed with 0x%04" PRIx16, status);
+    }
   }
 
   return success;
@@ -90,7 +94,16 @@ bool Radio::GetSignalStrength() {
       Transport::OpCode::GetSignalResponse,
       nullptr, 0, response, sizeof(response), 100ms);
   if (success) {
-
+    auto status = Transport::UnpackStatus(response);
+    success = (status == Transport::Status::Success);
+    if (!success) {
+      LOGE("Get signal strength request failed with 0x%04" PRIx16, status);
+    } else {
+      LOGI("Signal strength:");
+      LOGI("  summary: %s", Transport::GetSignalDescription(response[2]));
+      LOGI("  satellite: %s", Transport::GetSignalDescription(response[3]));
+      LOGI("  terrestrial: %s", Transport::GetSignalDescription(response[4]));
+    } 
   }
 
   return success;

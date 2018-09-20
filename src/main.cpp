@@ -51,6 +51,11 @@ int main(int argc, char **argv) {
       false /* req */, "/dev/ttyUSB0", "path", cmd);
   TCLAP::SwitchArg reset_arg("", "reset",
       "reset the radio before executing other commands", cmd);
+  TCLAP::SwitchArg log_signal_strength_arg("", "log_signal_strength",
+      "logs the current signal strength", cmd);
+  TCLAP::ValueArg<int> set_channel_arg("", "set_channel",
+      "sets the channel that the radio is decoding",
+      false /* req */, 51 /* eurobeat intensifies */, "channel", cmd);
   cmd.parse(argc, argv);
 
   Radio radio(path_arg.getValue().c_str());
@@ -64,14 +69,18 @@ int main(int argc, char **argv) {
   std::signal(SIGINT, SignalHandler);
 
   bool success = radio.IsOpen();
-  if (success) {
-    if (reset_arg.isSet()) {
-      success &= radio.Reset();
-    }
+  if (success && reset_arg.isSet()) {
+    success &= radio.Reset();
+  }
 
-    radio.SetPowerMode(Radio::PowerState::FullMode);
-    radio.GetSignalStrength();
-    radio.SetChannel(51);
+  radio.SetPowerMode(Radio::PowerState::FullMode);
+
+  if (success && log_signal_strength_arg.isSet()) {
+    success &= radio.GetSignalStrength();
+  }
+
+  if (success && set_channel_arg.isSet()) {
+    success &= radio.SetChannel(set_channel_arg.getValue());
   }
 
   radio.Stop();
