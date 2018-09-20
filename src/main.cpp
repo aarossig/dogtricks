@@ -64,6 +64,7 @@ int main(int argc, char **argv) {
     radio.SetChannel(51);
   }
 
+  radio.Stop();
   receive_thread.join();
 
   return (radio.IsOpen() ? 0 : -1);
