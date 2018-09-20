@@ -55,9 +55,23 @@ class Radio : public Transport::EventHandler,
    * Starts listening from the radio for packets if the transport was opened
    * successfully. This function blocks or returns false.
    *
-   * @return false if the transport is not open.
+   * @return true when stopped, false if the transport is not open.
    */
   bool Start();
+
+  /**
+   * Stops the receive loop in the radio object. This causes the previous
+   * call to Start() to return true.
+   */
+  void Stop();
+
+  /**
+   * @return true if the transport was opened successfully. This must be
+   *         queried before other commands can be sent to the radio.
+   */
+  bool IsOpen() const {
+    return transport_.IsOpen();
+  }
 
   /**
    * Sets the power state of the radio.

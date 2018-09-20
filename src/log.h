@@ -20,6 +20,9 @@
 #include <cstdio>
 #include <cstdlib>
 
+// TODO: fprintf is not thread safe, printing there from many threads is
+// race-ey. Should probably have some locks.
+
 #define LOG_FUNC(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
 
 #define LOGD(fmt, ...) LOG_FUNC(fmt, ##__VA_ARGS__)

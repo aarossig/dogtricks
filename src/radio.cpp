@@ -27,14 +27,11 @@ using namespace std::chrono_literals;
 namespace dogtricks {
 
 bool Radio::Start() {
-  bool success = transport_.IsOpen();
+  return transport_.Start();
+}
 
-  // TODO: Support a stop.
-  while (success) {
-    transport_.ReceiveFrame();
-  }
-
-  return success;
+void Radio::Stop() {
+  transport_.Stop();
 }
 
 bool Radio::SetPowerMode(PowerState power_state) {

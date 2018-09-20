@@ -15,11 +15,15 @@
  */
 
 #include <cstdio>
+#include <csignal>
 #include <string>
 #include <tclap/CmdLine.h>
 #include <thread>
 
+#include "log.h"
 #include "radio.h"
+
+using dogtricks::Radio;
 
 //! A description of the program.
 constexpr char kDescription[] = "A tool for making satellite radio dogs do tricks.";
@@ -27,7 +31,15 @@ constexpr char kDescription[] = "A tool for making satellite radio dogs do trick
 //! The version of the program.
 constexpr char kVersion[] = "0.0.1";
 
-using dogtricks::Radio;
+//! The radio instance that will be stopped when SIGINT is raised.
+Radio *gRadioInstance = nullptr;
+
+void SignalHandler(int signal) {
+  if (gRadioInstance != nullptr) {
+    LOGD("Stopping");
+    gRadioInstance->Stop();
+  }
+}
 
 int main(int argc, char **argv) {
   TCLAP::CmdLine cmd(kDescription, ' ', kVersion);
@@ -38,14 +50,21 @@ int main(int argc, char **argv) {
 
   Radio radio(path_arg.getValue().c_str());
   std::thread receive_thread([&radio](){
-    radio.Start();
+    if (!radio.Start()) {
+      LOGE("Failed to start receive loop for radio");
+    }
   });
 
-  radio.SetPowerMode(Radio::PowerState::FullMode);
-  radio.GetSignalStrength();
-  radio.SetChannel(51);
+  gRadioInstance = &radio;
+  std::signal(SIGINT, SignalHandler);
+
+  if (radio.IsOpen()) {
+    radio.SetPowerMode(Radio::PowerState::FullMode);
+    radio.GetSignalStrength();
+    radio.SetChannel(51);
+  }
 
   receive_thread.join();
 
-  return 0;
+  return (radio.IsOpen() ? 0 : -1);
 }

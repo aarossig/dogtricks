@@ -62,11 +62,23 @@ class Transport : public NonCopyable {
   Transport(const char *path, EventHandler& event_handler);
 
   /**
+   * Starts reception of frames from the device.
+   *
+   * @return true if the transport is open, false otherwise.
+   */
+  bool Start();
+
+  /**
    * @return true if this transport was opened successfully.
    */
   bool IsOpen() const {
     return (fd_ > 0);
   }
+
+  /**
+   * Stops reception of messages from the device.
+   */
+  void Stop();
 
   /**
    * Sends a frame to the radio with the supplied attributes.
@@ -111,6 +123,9 @@ class Transport : public NonCopyable {
   //! The file descriptor used to communicate with the serial device.
   int fd_;
 
+  //! Set to true when the transport is receiving frames.
+  bool receiving_;
+
   //! The event handler for the transport.
   EventHandler& event_handler_;
 
@@ -148,7 +163,7 @@ class Transport : public NonCopyable {
   /**
    * Reads one raw byte from the serial device.
    */
-  uint8_t ReadRawByte();
+  bool ReadRawByte(uint8_t *byte);
 };
 
 }  // namespace dogtricks

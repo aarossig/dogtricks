@@ -33,7 +33,7 @@ namespace dogtricks {
 
 Transport::Transport(const char *path, EventHandler& event_handler)
     : event_handler_(event_handler) {
-  fd_ = open(path, O_RDWR | O_NOCTTY | O_NONBLOCK);
+  fd_ = open(path, O_RDWR | O_NOCTTY);
   if (fd_ < 0) {
     LOGE("Error opening device: %s (%d)", strerror(errno), errno);
   } else {
@@ -54,11 +54,6 @@ Transport::Transport(const char *path, EventHandler& event_handler)
       if (tcsetattr(fd_, TCSANOW, &options) < 0) {
         LOGE("Failed to set serial port attributes");
       } else {
-        int flags = fcntl(fd_, F_GETFL, 0);
-        if (fcntl(fd_, F_SETFL, flags & ~O_NONBLOCK) != 0) {
-          LOGE("Failed to set serial port to blocking mode");
-        }
-
 #ifdef __APPLE__
         // HACK: It seems like reading/writing from a tty device too soon after
         // opening the device can cause failures to read/write. Insert a small
@@ -68,6 +63,20 @@ Transport::Transport(const char *path, EventHandler& event_handler)
       }
     }
   }
+}
+
+bool Transport::Start() {
+  receiving_ = (fd_ > 0);
+  bool running = receiving_;
+  while(receiving_) {
+    ReceiveFrame();
+  }
+
+  return running;
+}
+
+void Transport::Stop() {
+  receiving_ = false;
 }
 
 void Transport::SendMessageFrame(OpCode op_code, const uint8_t *payload,
@@ -101,7 +110,7 @@ void Transport::SendMessageFrame(OpCode op_code, const uint8_t *payload,
 void Transport::ReceiveFrame() {
   // Sync to the next frame.
   uint8_t message_buffer[kMessageBufferSize] = {};
-  while ((message_buffer[0] = ReadRawByte()) != kSyncByte) {}
+  while (ReadRawByte(&message_buffer[0]) && message_buffer[0] != kSyncByte) {}
 
   // Read the fields of the header.
   bool success = true;
@@ -121,29 +130,32 @@ void Transport::ReceiveFrame() {
   success &= ReadByte(&message_buffer[pos++]);
 
   // Compute the checksum.
-  int8_t computed_sum = ComputeSum(message_buffer, pos - 1);
-  int8_t received_sum = message_buffer[pos - 1];
+  if (success) {
+    int8_t computed_sum = ComputeSum(message_buffer, pos - 1);
+    int8_t received_sum = message_buffer[pos - 1];
 
-  if (static_cast<uint8_t>(computed_sum + received_sum) != 0) {
-    LOGE("Invalid checksum %" PRId8 " vs %" PRId8, computed_sum, received_sum);
-  } else {
-    uint8_t sequence_number = message_buffer[3];
-    uint8_t frame_type = message_buffer[4];
-    if (frame_type == kMessageFrame) {
-      SendAckFrame(sequence_number);
-      if (message_buffer[5] < 2) {
-        LOGE("Frame with short payload %" PRIu8, message_buffer[5]);
-      } else {
-        auto op_code = static_cast<OpCode>(
-            (message_buffer[6] << 8) | message_buffer[7]);
-        uint8_t *payload = &message_buffer[8];
-        size_t payload_size = message_buffer[5] - 2;
-        event_handler_.OnPacketReceived(op_code, payload, payload_size);
-      }
-    } else if (frame_type == kAckFrame) {
-      // TODO: Handle this and other Nack frames.
+    if (static_cast<uint8_t>(computed_sum + received_sum) != 0) {
+      LOGE("Invalid checksum %" PRId8 " vs %" PRId8,
+           computed_sum, received_sum);
     } else {
-      LOGD("Received frame type %" PRIu8, frame_type);
+      uint8_t sequence_number = message_buffer[3];
+      uint8_t frame_type = message_buffer[4];
+      if (frame_type == kMessageFrame) {
+        SendAckFrame(sequence_number);
+        if (message_buffer[5] < 2) {
+          LOGE("Frame with short payload %" PRIu8, message_buffer[5]);
+        } else {
+          auto op_code = static_cast<OpCode>(
+              (message_buffer[6] << 8) | message_buffer[7]);
+          uint8_t *payload = &message_buffer[8];
+          size_t payload_size = message_buffer[5] - 2;
+          event_handler_.OnPacketReceived(op_code, payload, payload_size);
+        }
+      } else if (frame_type == kAckFrame) {
+        // TODO: Handle this and other Nack frames.
+      } else {
+        LOGD("Received frame type %" PRIu8, frame_type);
+      }
     }
   }
 }
@@ -221,37 +233,38 @@ int8_t Transport::ComputeSum(const uint8_t *buffer, size_t size) {
 }
 
 bool Transport::ReadByte(uint8_t *byte) {
-  bool success = true;
-  uint8_t raw_byte = ReadRawByte();
-  if (raw_byte == kEscapeByte) {
-    raw_byte = ReadRawByte();
-    if (raw_byte == kEscapedSyncByte) {
-      *byte = kSyncByte;
-    } else if (raw_byte == kEscapeByte) {
-      *byte = kEscapeByte;
-    } else {
-      LOGE("Invalid escape sequence");
-      success = false;
+  bool success = ReadRawByte(byte);
+  if (success) {
+    if (*byte == kEscapeByte) {
+      success = ReadRawByte(byte);
+      if (success) {
+        if (*byte == kEscapedSyncByte) {
+          *byte = kSyncByte;
+        } else if (*byte == kEscapeByte) {
+          *byte = kEscapeByte;
+        } else {
+          // TODO: This is due to an invalid escape sequence received from
+          // hardware. This failure should be propagated but this is simpler.
+          FATAL_ERROR("Invalid escape sequence");
+        }
+      }
     }
-  } else {
-    *byte = raw_byte;
   }
 
   return success;
 }
 
-uint8_t Transport::ReadRawByte() {
-  uint8_t byte;
+bool Transport::ReadRawByte(uint8_t *byte) {
   ssize_t result = 0;
-  while (result == 0) {
-    result = read(fd_, &byte, 1);
+  while (result == 0 && receiving_) {
+    result = read(fd_, byte, 1);
     if (result < 0) {
       FATAL_ERROR("Failed to read from serial device with %s (%d)",
                   strerror(errno), errno);
     }
   }
 
-  return byte;
+  return receiving_;
 }
 
 }  // namespace dogtricks
