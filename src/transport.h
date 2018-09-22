@@ -70,20 +70,7 @@ class Transport : public NonCopyable {
   /**
    * Obtains a string description for a supplied signal strength byte.
    */
-  static const char *GetSignalDescription(uint8_t value) {
-    switch (value) {
-      case 0:
-        return "none";
-      case 1:
-        return "weak";
-       case 2:
-        return "good";
-      case 3:
-        return "excellent";
-      default:
-        return "<invalid>";
-    }
-  }
+  static const char *GetSignalDescription(uint8_t value);
 
   /**
    * The event handler for the transport to notify the application layers of

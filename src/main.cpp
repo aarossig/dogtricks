@@ -73,6 +73,7 @@ int main(int argc, char **argv) {
     success &= radio.Reset();
   }
 
+  // Ensure that the radio is in full power mode.
   radio.SetPowerMode(Radio::PowerState::FullMode);
 
   if (success && log_signal_strength_arg.isSet()) {
