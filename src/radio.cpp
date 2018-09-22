@@ -164,23 +164,24 @@ void Radio::HandleMetadataPacket(const uint8_t *payload, size_t size) {
     bool success = true;
     uint8_t field_count = payload[1];
     size_t parsing_offset = 2;
-    for (uint8_t i = 0; success && i < field_count; i++) {
+    for (uint8_t i = 0; i < field_count; i++) {
       if ((parsing_offset + 1) >= size) {
         LOGE("Short metadata packet");
         success = false;
-      } else {
-        uint8_t str_type = payload[parsing_offset++];
-        uint8_t length = payload[parsing_offset++];
-        if ((parsing_offset + length - 1) >= size) {
-          LOGE("Short metadata packet");
-          success = false;
-        } else {
-          auto str = std::string(
-              reinterpret_cast<const char *>(&payload[parsing_offset]), length);
-          PopulateMetadataEventField(&event, str_type, str);
-          parsing_offset += length;
-        }
+        break;
       }
+
+      uint8_t str_type = payload[parsing_offset++];
+      uint8_t length = payload[parsing_offset++];
+      if ((parsing_offset + length - 1) >= size) {
+        LOGE("Short metadata packet");
+        success = false;
+        break;
+      }
+
+      auto *str = reinterpret_cast<const char *>(&payload[parsing_offset]);
+      PopulateMetadataEventField(&event, str_type, std::string(str, length));
+      parsing_offset += length;
     }
 
     if (success) {
