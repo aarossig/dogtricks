@@ -48,6 +48,26 @@ class Transport : public NonCopyable {
   };
 
   /**
+   * The various types of metadata that can be sent.
+   */
+  enum class MetadataType : uint8_t {
+    Artist = 0x01,
+    Title = 0x02,
+    Album = 0x03,
+    RecordLabel = 0x04,
+    Composer = 0x06,
+    AltArtist = 0x07,
+    Comments = 0x08,
+    PromoText1 = 0x20,
+    PromoText2 = 0x21,
+    PromoText3 = 0x22,
+    PromoText4 = 0x23,
+    SongId = 0x86,
+    ArtistId = 0x88,
+    Empty = 0xe0,
+  };
+
+  /**
    * Possible status codes returned by the radio.
    */
   enum class Status : uint16_t {
@@ -58,7 +78,7 @@ class Transport : public NonCopyable {
    * Unpacks a uint16_t from the supplied buffer. The length is assumed to be
    * at least two.
    */
-  static uint16_t UnpackUInt16(uint8_t *buffer) {
+  static uint16_t UnpackUInt16(const uint8_t *buffer) {
     return ((buffer[0] << 8) | buffer[1]);
   }
 
@@ -66,7 +86,7 @@ class Transport : public NonCopyable {
    * Unpacks a status from the supplied buffer. The length is assumed to be
    * at least two.
    */
-  static Status UnpackStatus(uint8_t *buffer) {
+  static Status UnpackStatus(const uint8_t *buffer) {
     return static_cast<Status>(UnpackUInt16(buffer));
   }
 
@@ -139,7 +159,7 @@ class Transport : public NonCopyable {
   static constexpr size_t kMessageBufferSize = UINT8_MAX + 32;
 
   //! The size of the tx/rx frame buffers.
-  static constexpr size_t kTxRxBufferSize = UINT8_MAX + 64;
+  static constexpr size_t kTxRxBufferSize = UINT8_MAX + 128;
 
   //! The sync byte used to indicate a start of message.
   static constexpr uint8_t kSyncByte = 0xa4;

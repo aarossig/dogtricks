@@ -71,7 +71,7 @@ bool Radio::SetPowerMode(PowerState power_state) {
 
 bool Radio::SetChannel(uint8_t channel_id) {
   uint8_t payload[] = { channel_id, 0, 0, 0 };
-  uint8_t response[100];
+  uint8_t response[UINT8_MAX];
   bool success = SendCommand(
       Transport::OpCode::SetChannelRequest,
       Transport::OpCode::SetChannelResponse,
@@ -124,7 +124,7 @@ void Radio::OnPacketReceived(Transport::OpCode op_code, const uint8_t *payload,
     cv_.notify_one();
   } else if (op_code == Transport::OpCode::PutPdtResponse) {
     if (global_metadata_monitoring_enabled_) {
-      event_handler_->OnMetadataChange();
+      HandleMetadataPacket(payload, payload_size);
     } else {
       LOGD("Received unsolicited metadata change");
     }
@@ -152,6 +152,65 @@ bool Radio::SetMonitoringState() {
   }
 
   return success;
+}
+
+void Radio::HandleMetadataPacket(const uint8_t *payload, size_t size) {
+  if (size < 2) {
+    LOGE("Short metadata packet");
+  } else {
+    MetadataEvent event;
+    event.channel_id = payload[0];
+
+    uint8_t field_count = payload[1];
+    size_t parsing_offset = 2;
+    for (uint8_t i = 0; i < field_count; i++) {
+      uint8_t str_type = payload[parsing_offset];
+      uint8_t length = payload[parsing_offset + 1];
+      auto str = std::string(reinterpret_cast<const char *>(
+            &payload[parsing_offset + 2]), length);
+      switch (static_cast<Transport::MetadataType>(str_type)) {
+        case Transport::MetadataType::Artist:
+          event.artist = str;
+          break;
+        case Transport::MetadataType::Title:
+          event.title = str;
+          break;
+        case Transport::MetadataType::Album:
+          event.album = str;
+          break;
+        case Transport::MetadataType::RecordLabel:
+          event.record_label = str;
+          break;
+        case Transport::MetadataType::Composer:
+          event.composer = str;
+          break;
+        case Transport::MetadataType::AltArtist:
+          event.alt_artist = str;
+          break;
+        case Transport::MetadataType::Comments:
+          event.comments = str;
+          break;
+        case Transport::MetadataType::PromoText1:
+        case Transport::MetadataType::PromoText2:
+        case Transport::MetadataType::PromoText3:
+        case Transport::MetadataType::PromoText4:
+          event.promo_text.push_back(str);
+          break;
+        case Transport::MetadataType::SongId:
+        case Transport::MetadataType::ArtistId:
+        case Transport::MetadataType::Empty:
+          // Ignore these for now. They are not printable strings.
+          break;
+        default:
+          LOGE("Unsupported metadata 0x%02" PRIx8, str_type);
+          break;
+      }
+
+      parsing_offset += 2 + length;
+    }
+
+    event_handler_->OnMetadataChange(event);
+  }
 }
 
 bool Radio::SendCommand(Transport::OpCode request_op_code,

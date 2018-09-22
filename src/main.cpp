@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cinttypes>
 #include <cstdio>
 #include <csignal>
 #include <string>
@@ -49,8 +50,41 @@ void SignalHandler(int signal) {
  */
 class RadioEventHandler : public Radio::EventHandler {
  public:
-  virtual void OnMetadataChange() override {
-    LOGD("OnMetadataChange");
+  virtual void OnMetadataChange(const Radio::MetadataEvent& event) override {
+    LOGD("Metadata changed:");
+    LOGD("  channel_id: %" PRId8, event.channel_id);
+
+    if (event.artist.has_value()) {
+      LOGD("  artist: %s", event.artist.value().c_str());
+    }
+
+    if (event.title.has_value()) {
+      LOGD("  title: %s", event.title.value().c_str());
+    }
+
+    if (event.album.has_value()) {
+      LOGD("  album: %s", event.album.value().c_str());
+    }
+
+    if (event.record_label.has_value()) {
+      LOGD("  record label: %s", event.record_label.value().c_str());
+    }
+
+    if (event.composer.has_value()) {
+      LOGD("  composer: %s", event.composer.value().c_str());
+    }
+
+    if (event.alt_artist.has_value()) {
+      LOGD("  alt artist: %s", event.alt_artist.value().c_str());
+    }
+
+    if (event.comments.has_value()) {
+      LOGD("  comments: %s", event.comments.value().c_str());
+    }
+
+    for (size_t i = 0; i < event.promo_text.size(); i++) {
+      LOGD("  promo %zu: %s", i, event.promo_text[i].c_str());
+    }
   }
 };
 

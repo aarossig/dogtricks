@@ -19,6 +19,9 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <optional>
+#include <string>
+#include <vector>
 
 #include "non_copyable.h"
 #include "transport.h"
@@ -45,6 +48,41 @@ class Radio : public Transport::EventHandler,
   };
 
   /**
+   * An event that is published when metadata changes for a channel.
+   *
+   * The artist and title most frequently change and often contain
+   * promotional content such as web URLs and phone numbers.
+   */
+  struct MetadataEvent {
+    //! The channel ID that this event applies to.
+    uint8_t channel_id;
+
+    //! Set when the artist changed.
+    std::optional<std::string> artist;
+
+    //! Set when the title changed.
+    std::optional<std::string> title;
+
+    //! Set when the album changed.
+    std::optional<std::string> album;
+
+    //! Set when the record label changes.
+    std::optional<std::string> record_label;
+
+    //! Set when the composer changes.
+    std::optional<std::string> composer;
+
+    //! Set when the alternate artist changes.
+    std::optional<std::string> alt_artist;
+
+    //! Set when the comments change.
+    std::optional<std::string> comments;
+
+    //! Promotional strings.
+    std::vector<std::string> promo_text;
+  };
+
+  /**
    * Handles events from the radio such as status, metadata changes and
    * signal strength changes.
    */
@@ -53,7 +91,7 @@ class Radio : public Transport::EventHandler,
     /**
      * Inoked when the metadata for a channel has changed.
      */
-    virtual void OnMetadataChange() = 0;
+    virtual void OnMetadataChange(const MetadataEvent& event) = 0;
   };
 
   /**
@@ -158,6 +196,15 @@ class Radio : public Transport::EventHandler,
    * @return true if successful, false otherwise.
    */
   bool SetMonitoringState();
+
+  /**
+   * Parses a metadata packet and posts an event to the event handler with the
+   * change in state.
+   *
+   * @param payload The payload to parse.
+   * @param size The size of the payload to parse.
+   */
+  void HandleMetadataPacket(const uint8_t *payload, size_t size);
 
   /**
    * Sends a comment through the transport and populates the response buffer if
