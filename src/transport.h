@@ -42,6 +42,9 @@ class Transport : public NonCopyable {
     GetSignalRequest = 0x4018,
     GetSignalResponse = 0x6018,
     PutModuleReadyResponse = 0x8000,
+    SetFeatureMonitorRequest = 0x000d,
+    SetFeatureMonitorResponse = 0x200d,
+    PutPdtResponse = 0x8001,
   };
 
   /**
@@ -56,7 +59,7 @@ class Transport : public NonCopyable {
    * at least two.
    */
   static uint16_t UnpackUInt16(uint8_t *buffer) {
-    return ((buffer[1] << 8) | buffer[0]);
+    return ((buffer[0] << 8) | buffer[1]);
   }
 
   /**

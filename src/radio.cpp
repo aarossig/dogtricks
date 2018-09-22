@@ -109,6 +109,11 @@ bool Radio::GetSignalStrength() {
   return success;
 }
 
+bool Radio::SetGlobalMetadataMonitoringEnabled(bool enabled) {
+  global_metadata_monitoring_enabled_ = enabled;
+  return SetMonitoringState();
+}
+
 void Radio::OnPacketReceived(Transport::OpCode op_code, const uint8_t *payload,
                              size_t payload_size) {
   if (op_code == response_op_code_) {
@@ -117,9 +122,36 @@ void Radio::OnPacketReceived(Transport::OpCode op_code, const uint8_t *payload,
     assert(response_size_ >= payload_size);
     memcpy(response_, payload, payload_size);
     cv_.notify_one();
+  } else if (op_code == Transport::OpCode::PutPdtResponse) {
+    if (global_metadata_monitoring_enabled_) {
+      event_handler_->OnMetadataChange();
+    } else {
+      LOGD("Received unsolicited metadata change");
+    }
   } else {
     LOGD("Unhandled op code: 0x%04" PRIx16, op_code);
   }
+}
+
+bool Radio::SetMonitoringState() {
+  uint8_t request[5] = {0, 0, 0, static_cast<uint8_t>(
+      (global_metadata_monitoring_enabled_ << 3)),
+      0,
+  };
+  uint8_t response[2];
+  bool success = SendCommand(
+      Transport::OpCode::SetFeatureMonitorRequest,
+      Transport::OpCode::SetFeatureMonitorResponse,
+      request, sizeof(request), response, sizeof(response), 100ms);
+  if (success) {
+    auto status = Transport::UnpackStatus(response);
+    success = (status == Transport::Status::Success);
+    if (!success) {
+      LOGE("Set monitoring state failed with 0x%04", PRIx16, status);
+    }
+  }
+
+  return success;
 }
 
 bool Radio::SendCommand(Transport::OpCode request_op_code,

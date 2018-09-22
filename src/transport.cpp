@@ -166,8 +166,7 @@ void Transport::ReceiveFrame() {
         if (message_buffer[5] < 2) {
           LOGE("Frame with short payload %" PRIu8, message_buffer[5]);
         } else {
-          auto op_code = static_cast<OpCode>(
-              (message_buffer[6] << 8) | message_buffer[7]);
+          auto op_code = static_cast<OpCode>(UnpackUInt16(&message_buffer[6]));
           uint8_t *payload = &message_buffer[8];
           size_t payload_size = message_buffer[5] - 2;
           event_handler_.OnPacketReceived(op_code, payload, payload_size);

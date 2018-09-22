@@ -44,6 +44,16 @@ void SignalHandler(int signal) {
   }
 }
 
+/**
+ * An implementation of the radio event handler for the command line tool.
+ */
+class RadioEventHandler : public Radio::EventHandler {
+ public:
+  virtual void OnMetadataChange() override {
+    LOGD("OnMetadataChange");
+  }
+};
+
 int main(int argc, char **argv) {
   TCLAP::CmdLine cmd(kDescription, ' ', kVersion);
   TCLAP::ValueArg<std::string> path_arg("", "path",
@@ -53,12 +63,15 @@ int main(int argc, char **argv) {
       "reset the radio before executing other commands", cmd);
   TCLAP::SwitchArg log_signal_strength_arg("", "log_signal_strength",
       "logs the current signal strength", cmd);
+  TCLAP::SwitchArg log_global_metadata_arg("", "log_global_metadata",
+      "logs all changes in channel metadata", cmd);
   TCLAP::ValueArg<int> set_channel_arg("", "set_channel",
       "sets the channel that the radio is decoding",
       false /* req */, 51 /* eurobeat intensifies */, "channel", cmd);
   cmd.parse(argc, argv);
 
-  Radio radio(path_arg.getValue().c_str());
+  RadioEventHandler event_handler;
+  Radio radio(path_arg.getValue().c_str(), &event_handler);
   std::thread receive_thread([&radio](){
     if (!radio.Start()) {
       LOGE("Failed to start receive loop for radio");
@@ -68,6 +81,7 @@ int main(int argc, char **argv) {
   gRadioInstance = &radio;
   std::signal(SIGINT, SignalHandler);
 
+  bool quit = true;  // Set to true when the program should quit.
   bool success = radio.IsOpen();
   if (success && reset_arg.isSet()) {
     success &= radio.Reset();
@@ -80,11 +94,19 @@ int main(int argc, char **argv) {
     success &= radio.GetSignalStrength();
   }
 
+  if (success && log_global_metadata_arg.isSet()) {
+    success &= radio.SetGlobalMetadataMonitoringEnabled(true);
+    quit = false;
+  }
+
   if (success && set_channel_arg.isSet()) {
     success &= radio.SetChannel(set_channel_arg.getValue());
   }
 
-  radio.Stop();
+  if (quit) {
+    radio.Stop();
+  }
+
   receive_thread.join();
 
   return (success ? 0 : -1);

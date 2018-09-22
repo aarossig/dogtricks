@@ -45,11 +45,25 @@ class Radio : public Transport::EventHandler,
   };
 
   /**
+   * Handles events from the radio such as status, metadata changes and
+   * signal strength changes.
+   */
+  class EventHandler {
+   public:
+    /**
+     * Inoked when the metadata for a channel has changed.
+     */
+    virtual void OnMetadataChange() = 0;
+  };
+
+  /**
    * Setup the radio object with the desired link.
    * 
    * @param path The path to the serial device to communicate with.
+   * @param event_handler The event handler to invoke with radio events.
    */
-  Radio(const char *path) : transport_(path, *this) {}
+  Radio(const char *path, EventHandler *event_handler) 
+      : event_handler_(event_handler), transport_(path, *this) {}
 
   /**
    * Starts listening from the radio for packets if the transport was opened
@@ -86,7 +100,9 @@ class Radio : public Transport::EventHandler,
   bool SetPowerMode(PowerState power_state);
 
   /**
+   * Sets the channel to decode.
    *
+   * @return true if successful, false otherwise.
    */
   bool SetChannel(uint8_t channel_id);
 
@@ -97,6 +113,14 @@ class Radio : public Transport::EventHandler,
    */
   bool GetSignalStrength();
 
+  /**
+   * Enables monitoring of metadata changes for all channels.
+   *
+   * @param enabled Whether or not to enable meta data monitoring.
+   * @return true if successful, false otherwise.
+   */
+  bool SetGlobalMetadataMonitoringEnabled(bool enabled);
+
  protected:
   // Transport::EventHandler methods.
   virtual void OnPacketReceived(Transport::OpCode op_code,
@@ -104,6 +128,9 @@ class Radio : public Transport::EventHandler,
                                 size_t payload_size) override;
 
  private:
+  //! The event handler to invoke with radio state changes.
+  EventHandler *event_handler_;
+
   //! The underlying transport to send/receive messages with.
   Transport transport_;
 
@@ -121,6 +148,16 @@ class Radio : public Transport::EventHandler,
 
   //! The size of the response buffer to populate.
   size_t response_size_;
+
+  //! Set to true when metadata monitoring is enabled.
+  bool global_metadata_monitoring_enabled_ = false;
+
+  /**
+   * Sets the monitoring state based on the current configuration.
+   *
+   * @return true if successful, false otherwise.
+   */
+  bool SetMonitoringState();
 
   /**
    * Sends a comment through the transport and populates the response buffer if
