@@ -207,6 +207,18 @@ class Radio : public Transport::EventHandler,
   void HandleMetadataPacket(const uint8_t *payload, size_t size);
 
   /**
+   * Populates a field within a metadata event with the supplied string and
+   * type.
+   *
+   * @param event The event to populate.
+   * @param str_type Cooresponds to Transport::MetadataType, the type of the
+   *                 string.
+   * @param str The string to attach to the supplied event.
+   */
+  void PopulateMetadataEventField(MetadataEvent *event,
+                                  uint8_t str_type, std::string str);
+
+  /**
    * Sends a comment through the transport and populates the response buffer if
    * supplied.
    *

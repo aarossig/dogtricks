@@ -161,55 +161,72 @@ void Radio::HandleMetadataPacket(const uint8_t *payload, size_t size) {
     MetadataEvent event;
     event.channel_id = payload[0];
 
+    bool success = true;
     uint8_t field_count = payload[1];
     size_t parsing_offset = 2;
-    for (uint8_t i = 0; i < field_count; i++) {
-      uint8_t str_type = payload[parsing_offset];
-      uint8_t length = payload[parsing_offset + 1];
-      auto str = std::string(reinterpret_cast<const char *>(
-            &payload[parsing_offset + 2]), length);
-      switch (static_cast<Transport::MetadataType>(str_type)) {
-        case Transport::MetadataType::Artist:
-          event.artist = str;
-          break;
-        case Transport::MetadataType::Title:
-          event.title = str;
-          break;
-        case Transport::MetadataType::Album:
-          event.album = str;
-          break;
-        case Transport::MetadataType::RecordLabel:
-          event.record_label = str;
-          break;
-        case Transport::MetadataType::Composer:
-          event.composer = str;
-          break;
-        case Transport::MetadataType::AltArtist:
-          event.alt_artist = str;
-          break;
-        case Transport::MetadataType::Comments:
-          event.comments = str;
-          break;
-        case Transport::MetadataType::PromoText1:
-        case Transport::MetadataType::PromoText2:
-        case Transport::MetadataType::PromoText3:
-        case Transport::MetadataType::PromoText4:
-          event.promo_text.push_back(str);
-          break;
-        case Transport::MetadataType::SongId:
-        case Transport::MetadataType::ArtistId:
-        case Transport::MetadataType::Empty:
-          // Ignore these for now. They are not printable strings.
-          break;
-        default:
-          LOGE("Unsupported metadata 0x%02" PRIx8, str_type);
-          break;
+    for (uint8_t i = 0; success && i < field_count; i++) {
+      if ((parsing_offset + 1) >= size) {
+        LOGE("Short metadata packet");
+        success = false;
+      } else {
+        uint8_t str_type = payload[parsing_offset++];
+        uint8_t length = payload[parsing_offset++];
+        if ((parsing_offset + length - 1) >= size) {
+          LOGE("Short metadata packet");
+          success = false;
+        } else {
+          auto str = std::string(
+              reinterpret_cast<const char *>(&payload[parsing_offset]), length);
+          PopulateMetadataEventField(&event, str_type, str);
+          parsing_offset += length;
+        }
       }
-
-      parsing_offset += 2 + length;
     }
 
-    event_handler_->OnMetadataChange(event);
+    if (success) {
+      event_handler_->OnMetadataChange(event);
+    }
+  }
+}
+
+void Radio::PopulateMetadataEventField(
+    MetadataEvent *event, uint8_t str_type, std::string str) {
+  switch (static_cast<Transport::MetadataType>(str_type)) {
+    case Transport::MetadataType::Artist:
+      event->artist = str;
+      break;
+    case Transport::MetadataType::Title:
+      event->title = str;
+      break;
+    case Transport::MetadataType::Album:
+      event->album = str;
+      break;
+    case Transport::MetadataType::RecordLabel:
+      event->record_label = str;
+      break;
+    case Transport::MetadataType::Composer:
+      event->composer = str;
+      break;
+    case Transport::MetadataType::AltArtist:
+      event->alt_artist = str;
+      break;
+    case Transport::MetadataType::Comments:
+      event->comments = str;
+      break;
+    case Transport::MetadataType::PromoText1:
+    case Transport::MetadataType::PromoText2:
+    case Transport::MetadataType::PromoText3:
+    case Transport::MetadataType::PromoText4:
+      event->promo_text.push_back(str);
+      break;
+    case Transport::MetadataType::SongId:
+    case Transport::MetadataType::ArtistId:
+    case Transport::MetadataType::Empty:
+      // Ignore these for now. They are not printable strings.
+      break;
+    default:
+      LOGE("Unsupported metadata 0x%02" PRIx8, str_type);
+      break;
   }
 }
 
