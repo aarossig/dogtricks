@@ -26,6 +26,21 @@ using namespace std::chrono_literals;
 
 namespace dogtricks {
 
+const char *Radio::GetSignalDescription(SignalStrength signal_strength) {
+  switch (signal_strength) {
+    case SignalStrength::None:
+      return "none";
+    case SignalStrength::Weak:
+      return "weak";
+    case SignalStrength::Good:
+      return "good";
+    case SignalStrength::Excellent:
+      return "excellent";
+    default:
+      return nullptr;
+  }
+}
+
 bool Radio::Start() {
   return transport_.Start();
 }
@@ -87,7 +102,9 @@ bool Radio::SetChannel(uint8_t channel_id) {
   return success;
 }
 
-bool Radio::GetSignalStrength() {
+bool Radio::GetSignalStrength(SignalStrength *summary,
+                              SignalStrength *satellite,
+                              SignalStrength *terrestrial) {
   uint8_t response[6];
   bool success = SendCommand(
       Transport::OpCode::GetSignalRequest,
@@ -99,10 +116,12 @@ bool Radio::GetSignalStrength() {
     if (!success) {
       LOGE("Get signal strength request failed with 0x%04" PRIx16, status);
     } else {
-      LOGI("Signal strength:");
-      LOGI("  summary: %s", GetSignalDescription(response[2]));
-      LOGI("  satellite: %s", GetSignalDescription(response[3]));
-      LOGI("  terrestrial: %s", GetSignalDescription(response[4]));
+      success &= SignalStrengthIsValid(response[2]);
+      success &= SignalStrengthIsValid(response[3]);
+      success &= SignalStrengthIsValid(response[4]);
+      *summary = static_cast<SignalStrength>(response[2]);
+      *satellite = static_cast<SignalStrength>(response[3]);
+      *terrestrial = static_cast<SignalStrength>(response[4]);
     } 
   }
 
@@ -160,21 +179,6 @@ void Radio::OnPacketReceived(Transport::OpCode op_code, const uint8_t *payload,
     }
   } else {
     LOGD("Unhandled op code: 0x%04" PRIx16, op_code);
-  }
-}
-
-const char *Radio::GetSignalDescription(uint8_t value) {
-  switch (value) {
-    case 0:
-      return "none";
-    case 1:
-      return "weak";
-     case 2:
-      return "good";
-    case 3:
-      return "excellent";
-    default:
-      return "<invalid>";
   }
 }
 

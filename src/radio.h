@@ -51,6 +51,29 @@ class Radio : public Transport::EventHandler,
   };
 
   /**
+   * The possible states for signal strength.
+   */
+  enum class SignalStrength : uint8_t {
+    None = 0x00,
+    Weak = 0x01,
+    Good = 0x02,
+    Excellent = 0x03,
+  };
+
+  /**
+   * @return true if the supplied byte is a valid signal strength enumeration.
+   */
+  static bool SignalStrengthIsValid(uint8_t value) {
+    return (static_cast<SignalStrength>(value) >= SignalStrength::None
+        && static_cast<SignalStrength>(value) <= SignalStrength::Excellent);
+  }
+
+  /**
+   * Obtains a string description for a supplied signal strength byte.
+   */
+  static const char *GetSignalDescription(SignalStrength value);
+
+  /**
    * An event that is published when metadata changes for a channel.
    *
    * The artist and title most frequently change and often contain
@@ -96,11 +119,6 @@ class Radio : public Transport::EventHandler,
      */
     virtual void OnMetadataChange(const MetadataEvent& event) = 0;
   };
-
-  /**
-   * Obtains a string description for a supplied signal strength byte.
-   */
-  static const char *GetSignalDescription(uint8_t value);
 
   /**
    * Setup the radio object with the desired link.
@@ -155,9 +173,16 @@ class Radio : public Transport::EventHandler,
   /**
    * Sends a request for the current signal strength. Errors are logged.
    *
+   * @param summary A signal strength pointer to fill in with a summary of the
+   *                signal strength.
+   * @param satellite A signal strength pointer to fill in with the satellite
+   *                  signal strength.
+   * @param terrestrial A signal strength pointer to fill in with the
+   *                    terrestrial signal strength.
    * @return true if successful, false otherwise.
    */
-  bool GetSignalStrength();
+  bool GetSignalStrength(SignalStrength *summary, SignalStrength *satellite,
+                         SignalStrength *terrestrial);
 
   /**
    * Enables monitoring of metadata changes for all channels.

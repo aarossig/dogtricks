@@ -127,7 +127,16 @@ int main(int argc, char **argv) {
   radio.SetPowerMode(Radio::PowerState::FullMode);
 
   if (success && log_signal_strength_arg.isSet()) {
-    success &= radio.GetSignalStrength();
+    Radio::SignalStrength summary;
+    Radio::SignalStrength satellite;
+    Radio::SignalStrength terrestrial;
+    success &= radio.GetSignalStrength(&summary, &satellite, &terrestrial);
+    if (success) {
+      LOGI("Signal strength:");
+      LOGI("  summary: %s", Radio::GetSignalDescription(summary));
+      LOGI("  satellite: %s", Radio::GetSignalDescription(satellite));
+      LOGI("  terrestrial: %s", Radio::GetSignalDescription(terrestrial));
+    } 
   }
 
   if (success && list_channels_arg.isSet()) {
