@@ -79,6 +79,8 @@ bool Radio::SetPowerMode(PowerState power_state) {
       Transport::OpCode::SetPowerModeResponse,
       payload, sizeof(payload), response, sizeof(response), 100ms);
   if (success) {
+    auto status = UnpackStatus(response);
+    success = (status == Status::Success);
   }
 
   return success;
