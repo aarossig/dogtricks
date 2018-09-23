@@ -74,15 +74,12 @@ class Radio : public Transport::EventHandler,
   static const char *GetSignalDescription(SignalStrength value);
 
   /**
-   * An event that is published when metadata changes for a channel.
+   * A grouping of metadata.
    *
    * The artist and title most frequently change and often contain
    * promotional content such as web URLs and phone numbers.
    */
-  struct MetadataEvent {
-    //! The channel ID that this event applies to.
-    uint8_t channel_id;
-
+  struct Metadata {
     //! Set when the artist changed.
     std::optional<std::string> artist;
 
@@ -109,6 +106,34 @@ class Radio : public Transport::EventHandler,
   };
 
   /**
+   * A description of a channel.
+   */
+  struct ChannelDescriptor {
+    //! The channel ID that this descriptor applies to. This may seem redundant,
+    //! but consider if a collection of ChannelDescriptors were stored in an
+    //! unordered container.
+    uint8_t channel_id;
+
+    //! The category ID of this channel.
+    uint8_t category_id;
+
+    //! The short name.
+    std::string short_name;
+
+    //! The long name.
+    std::string long_name;
+
+    //! The short category name.
+    std::string short_category_name;
+
+    //! The long category name.
+    std::string long_category_name;
+
+    //! The current metadata for the channel.
+    Metadata metadata;
+  };
+
+  /**
    * Handles events from the radio such as status, metadata changes and
    * signal strength changes.
    */
@@ -117,7 +142,8 @@ class Radio : public Transport::EventHandler,
     /**
      * Inoked when the metadata for a channel has changed.
      */
-    virtual void OnMetadataChange(const MetadataEvent& event) = 0;
+    virtual void OnMetadataChange(uint8_t channel_id,
+                                  const Metadata& event) = 0;
   };
 
   /**
@@ -283,15 +309,14 @@ class Radio : public Transport::EventHandler,
   void HandleMetadataPacket(const uint8_t *payload, size_t size);
 
   /**
-   * Populates a field within a metadata event with the supplied string and
-   * type.
+   * Populates a field within a metadata with the supplied string and type.
    *
-   * @param event The event to populate.
+   * @param data The data to populate.
    * @param str_type Cooresponds to Transport::MetadataType, the type of the
    *                 string.
    * @param str The string to attach to the supplied event.
    */
-  void PopulateMetadataEventField(MetadataEvent *event,
+  void PopulateMetadataEventField(Metadata *data,
                                   uint8_t str_type, std::string str);
 
   /**

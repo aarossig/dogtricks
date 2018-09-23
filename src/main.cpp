@@ -50,9 +50,10 @@ void SignalHandler(int signal) {
  */
 class RadioEventHandler : public Radio::EventHandler {
  public:
-  virtual void OnMetadataChange(const Radio::MetadataEvent& event) override {
+  virtual void OnMetadataChange(uint8_t channel_id,
+                                const Radio::Metadata& event) override {
     LOGD("Metadata changed:");
-    LOGD("  channel_id: %" PRId8, event.channel_id);
+    LOGD("  channel_id: %" PRId8, channel_id);
 
     if (event.artist.has_value()) {
       LOGD("  artist: %s", event.artist.value().c_str());

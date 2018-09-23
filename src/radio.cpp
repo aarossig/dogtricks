@@ -206,8 +206,8 @@ void Radio::HandleMetadataPacket(const uint8_t *payload, size_t size) {
   if (size < 2) {
     LOGE("Short metadata packet");
   } else {
-    MetadataEvent event;
-    event.channel_id = payload[0];
+    Metadata event;
+    uint8_t channel_id = payload[0];
 
     bool success = true;
     uint8_t field_count = payload[1];
@@ -233,40 +233,40 @@ void Radio::HandleMetadataPacket(const uint8_t *payload, size_t size) {
     }
 
     if (success) {
-      event_handler_->OnMetadataChange(event);
+      event_handler_->OnMetadataChange(channel_id, event);
     }
   }
 }
 
 void Radio::PopulateMetadataEventField(
-    MetadataEvent *event, uint8_t str_type, std::string str) {
+    Metadata *data, uint8_t str_type, std::string str) {
   switch (static_cast<MetadataType>(str_type)) {
     case MetadataType::Artist:
-      event->artist = str;
+      data->artist = str;
       break;
     case MetadataType::Title:
-      event->title = str;
+      data->title = str;
       break;
     case MetadataType::Album:
-      event->album = str;
+      data->album = str;
       break;
     case MetadataType::RecordLabel:
-      event->record_label = str;
+      data->record_label = str;
       break;
     case MetadataType::Composer:
-      event->composer = str;
+      data->composer = str;
       break;
     case MetadataType::AltArtist:
-      event->alt_artist = str;
+      data->alt_artist = str;
       break;
     case MetadataType::Comments:
-      event->comments = str;
+      data->comments = str;
       break;
     case MetadataType::PromoText1:
     case MetadataType::PromoText2:
     case MetadataType::PromoText3:
     case MetadataType::PromoText4:
-      event->promo_text.push_back(str);
+      data->promo_text.push_back(str);
       break;
     case MetadataType::SongId:
     case MetadataType::ArtistId:
