@@ -135,13 +135,13 @@ class Radio : public Transport::EventHandler,
    *
    * @return true when stopped, false if the transport is not open.
    */
-  bool Start();
+  bool Start() { return transport_.Start(); }
 
   /**
    * Stops the receive loop in the radio object. This causes the previous
    * call to Start() to return true.
    */
-  void Stop();
+  void Stop() { transport_.Stop(); }
 
   /**
    * @return true if the transport was opened successfully. This must be

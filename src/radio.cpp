@@ -46,14 +46,6 @@ const char *Radio::GetSignalDescription(SignalStrength signal_strength) {
   }
 }
 
-bool Radio::Start() {
-  return transport_.Start();
-}
-
-void Radio::Stop() {
-  transport_.Stop();
-}
-
 bool Radio::Reset() {
   uint8_t response[2];
   bool success = SendCommand(
