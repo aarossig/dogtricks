@@ -99,6 +99,8 @@ int main(int argc, char **argv) {
       "logs the current signal strength", cmd);
   TCLAP::SwitchArg log_global_metadata_arg("", "log_global_metadata",
       "logs all changes in channel metadata", cmd);
+  TCLAP::SwitchArg list_channels_arg("", "list_channels",
+      "logs the list of channels available", cmd);
   TCLAP::ValueArg<int> set_channel_arg("", "set_channel",
       "sets the channel that the radio is decoding",
       false /* req */, 51 /* eurobeat intensifies */, "channel", cmd);
@@ -126,6 +128,12 @@ int main(int argc, char **argv) {
 
   if (success && log_signal_strength_arg.isSet()) {
     success &= radio.GetSignalStrength();
+  }
+
+  if (success && list_channels_arg.isSet()) {
+    Radio::ChannelList channels;
+    success &= radio.GetChannelList(&channels);
+    // TODO: Log the received data.
   }
 
   if (success && log_global_metadata_arg.isSet()) {

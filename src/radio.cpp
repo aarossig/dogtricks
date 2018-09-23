@@ -114,6 +114,36 @@ bool Radio::SetGlobalMetadataMonitoringEnabled(bool enabled) {
   return SetMonitoringState();
 }
 
+bool Radio::GetChannelList(ChannelList *channels) {
+  // List all channels.
+  uint8_t request[] = {
+      0 /* base channel */,
+      1 /* upward */,
+      224 /* count */,
+      0 /* overrides */
+  };
+  uint8_t response[UINT8_MAX];
+  bool success = SendCommand(
+      Transport::OpCode::GetChannelListRequest,
+      Transport::OpCode::GetChannelListResponse,
+      request, sizeof(request), response, sizeof(response), 100ms);
+  if (success) {
+    auto status = Transport::UnpackStatus(response);
+    success = (status == Transport::Status::Success);
+    if (!success) {
+      LOGE("Get channel list request failed with 0x%04", PRIx16, status);
+    } else {
+      uint8_t channel_count = response[0];
+      channels->resize(channel_count);
+      for (uint8_t i = 0; i < channel_count; i++) {
+        channels->push_back(response[1 + i]);
+      }
+    }
+  }
+
+  return success;
+}
+
 void Radio::OnPacketReceived(Transport::OpCode op_code, const uint8_t *payload,
                              size_t payload_size) {
   if (op_code == response_op_code_) {

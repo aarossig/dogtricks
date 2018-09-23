@@ -35,6 +35,9 @@ namespace dogtricks {
 class Radio : public Transport::EventHandler,
               public NonCopyable {
  public:
+  //! A typedef for a list of channels.
+  typedef std::vector<uint8_t> ChannelList;
+
   /**
    * The possible power states of the radio.
    */
@@ -158,6 +161,14 @@ class Radio : public Transport::EventHandler,
    * @return true if successful, false otherwise.
    */
   bool SetGlobalMetadataMonitoringEnabled(bool enabled);
+
+  /**
+   * Reads the list of channels from the radio.
+   *
+   * @param channels A list that is populated with the available channels.
+   * @return true if successful, false otherwise.
+   */
+  bool GetChannelList(ChannelList *channels);
 
  protected:
   // Transport::EventHandler methods.

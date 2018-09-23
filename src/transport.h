@@ -45,6 +45,8 @@ class Transport : public NonCopyable {
     SetFeatureMonitorRequest = 0x000d,
     SetFeatureMonitorResponse = 0x200d,
     PutPdtResponse = 0x8001,
+    GetChannelListRequest = 0x400b,
+    GetChannelListResponse = 0x600b,
   };
 
   /**
