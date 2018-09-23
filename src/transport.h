@@ -34,46 +34,19 @@ class Transport : public NonCopyable {
    */
   enum class OpCode : uint16_t {
     SetPowerModeRequest = 0x0008,
-    SetPowerModeResponse = 0x2008,
     SetResetRequest = 0x0009,
-    SetResetResponse = 0x2009,
     SetChannelRequest = 0x000a,
+    SetFeatureMonitorRequest = 0x000d,
+    SetPowerModeResponse = 0x2008,
+    SetResetResponse = 0x2009,
     SetChannelResponse = 0x200a,
+    SetFeatureMonitorResponse = 0x200d,
+    GetChannelListRequest = 0x400b,
     GetSignalRequest = 0x4018,
+    GetChannelListResponse = 0x600b,
     GetSignalResponse = 0x6018,
     PutModuleReadyResponse = 0x8000,
-    SetFeatureMonitorRequest = 0x000d,
-    SetFeatureMonitorResponse = 0x200d,
     PutPdtResponse = 0x8001,
-    GetChannelListRequest = 0x400b,
-    GetChannelListResponse = 0x600b,
-  };
-
-  /**
-   * The various types of metadata that can be sent.
-   */
-  enum class MetadataType : uint8_t {
-    Artist = 0x01,
-    Title = 0x02,
-    Album = 0x03,
-    RecordLabel = 0x04,
-    Composer = 0x06,
-    AltArtist = 0x07,
-    Comments = 0x08,
-    PromoText1 = 0x20,
-    PromoText2 = 0x21,
-    PromoText3 = 0x22,
-    PromoText4 = 0x23,
-    SongId = 0x86,
-    ArtistId = 0x88,
-    Empty = 0xe0,
-  };
-
-  /**
-   * Possible status codes returned by the radio.
-   */
-  enum class Status : uint16_t {
-    Success = 0,
   };
 
   /**
@@ -83,19 +56,6 @@ class Transport : public NonCopyable {
   static uint16_t UnpackUInt16(const uint8_t *buffer) {
     return ((buffer[0] << 8) | buffer[1]);
   }
-
-  /**
-   * Unpacks a status from the supplied buffer. The length is assumed to be
-   * at least two.
-   */
-  static Status UnpackStatus(const uint8_t *buffer) {
-    return static_cast<Status>(UnpackUInt16(buffer));
-  }
-
-  /**
-   * Obtains a string description for a supplied signal strength byte.
-   */
-  static const char *GetSignalDescription(uint8_t value);
 
   /**
    * The event handler for the transport to notify the application layers of

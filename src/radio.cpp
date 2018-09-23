@@ -41,8 +41,8 @@ bool Radio::Reset() {
       Transport::OpCode::SetResetResponse,
       nullptr, 0, response, sizeof(response), 100ms);
   if (success) {
-    Transport::Status status = Transport::UnpackStatus(response);
-    success = (status == Transport::Status::Success);
+    auto status = UnpackStatus(response);
+    success = (status == Status::Success);
     if (!success) {
       LOGE("Reset request failed with 0x%04" PRIx16, status);
     } else {
@@ -77,8 +77,8 @@ bool Radio::SetChannel(uint8_t channel_id) {
       Transport::OpCode::SetChannelResponse,
       payload, sizeof(payload), response, sizeof(response), 100ms);
   if (success) {
-    auto status = Transport::UnpackStatus(response);
-    success = (status == Transport::Status::Success);
+    auto status = UnpackStatus(response);
+    success = (status == Status::Success);
     if (!success) {
       LOGE("Set channel request failed with 0x%04" PRIx16, status);
     }
@@ -94,15 +94,15 @@ bool Radio::GetSignalStrength() {
       Transport::OpCode::GetSignalResponse,
       nullptr, 0, response, sizeof(response), 100ms);
   if (success) {
-    auto status = Transport::UnpackStatus(response);
-    success = (status == Transport::Status::Success);
+    auto status = UnpackStatus(response);
+    success = (status == Status::Success);
     if (!success) {
       LOGE("Get signal strength request failed with 0x%04" PRIx16, status);
     } else {
       LOGI("Signal strength:");
-      LOGI("  summary: %s", Transport::GetSignalDescription(response[2]));
-      LOGI("  satellite: %s", Transport::GetSignalDescription(response[3]));
-      LOGI("  terrestrial: %s", Transport::GetSignalDescription(response[4]));
+      LOGI("  summary: %s", GetSignalDescription(response[2]));
+      LOGI("  satellite: %s", GetSignalDescription(response[3]));
+      LOGI("  terrestrial: %s", GetSignalDescription(response[4]));
     } 
   }
 
@@ -128,8 +128,8 @@ bool Radio::GetChannelList(ChannelList *channels) {
       Transport::OpCode::GetChannelListResponse,
       request, sizeof(request), response, sizeof(response), 100ms);
   if (success) {
-    auto status = Transport::UnpackStatus(response);
-    success = (status == Transport::Status::Success);
+    auto status = UnpackStatus(response);
+    success = (status == Status::Success);
     if (!success) {
       LOGE("Get channel list request failed with 0x%04", PRIx16, status);
     } else {
@@ -163,6 +163,21 @@ void Radio::OnPacketReceived(Transport::OpCode op_code, const uint8_t *payload,
   }
 }
 
+const char *Radio::GetSignalDescription(uint8_t value) {
+  switch (value) {
+    case 0:
+      return "none";
+    case 1:
+      return "weak";
+     case 2:
+      return "good";
+    case 3:
+      return "excellent";
+    default:
+      return "<invalid>";
+  }
+}
+
 bool Radio::SetMonitoringState() {
   uint8_t request[5] = {0, 0, 0, static_cast<uint8_t>(
       (global_metadata_monitoring_enabled_ << 3)),
@@ -174,8 +189,8 @@ bool Radio::SetMonitoringState() {
       Transport::OpCode::SetFeatureMonitorResponse,
       request, sizeof(request), response, sizeof(response), 100ms);
   if (success) {
-    auto status = Transport::UnpackStatus(response);
-    success = (status == Transport::Status::Success);
+    auto status = UnpackStatus(response);
+    success = (status == Status::Success);
     if (!success) {
       LOGE("Set monitoring state failed with 0x%04", PRIx16, status);
     }
@@ -222,37 +237,37 @@ void Radio::HandleMetadataPacket(const uint8_t *payload, size_t size) {
 
 void Radio::PopulateMetadataEventField(
     MetadataEvent *event, uint8_t str_type, std::string str) {
-  switch (static_cast<Transport::MetadataType>(str_type)) {
-    case Transport::MetadataType::Artist:
+  switch (static_cast<MetadataType>(str_type)) {
+    case MetadataType::Artist:
       event->artist = str;
       break;
-    case Transport::MetadataType::Title:
+    case MetadataType::Title:
       event->title = str;
       break;
-    case Transport::MetadataType::Album:
+    case MetadataType::Album:
       event->album = str;
       break;
-    case Transport::MetadataType::RecordLabel:
+    case MetadataType::RecordLabel:
       event->record_label = str;
       break;
-    case Transport::MetadataType::Composer:
+    case MetadataType::Composer:
       event->composer = str;
       break;
-    case Transport::MetadataType::AltArtist:
+    case MetadataType::AltArtist:
       event->alt_artist = str;
       break;
-    case Transport::MetadataType::Comments:
+    case MetadataType::Comments:
       event->comments = str;
       break;
-    case Transport::MetadataType::PromoText1:
-    case Transport::MetadataType::PromoText2:
-    case Transport::MetadataType::PromoText3:
-    case Transport::MetadataType::PromoText4:
+    case MetadataType::PromoText1:
+    case MetadataType::PromoText2:
+    case MetadataType::PromoText3:
+    case MetadataType::PromoText4:
       event->promo_text.push_back(str);
       break;
-    case Transport::MetadataType::SongId:
-    case Transport::MetadataType::ArtistId:
-    case Transport::MetadataType::Empty:
+    case MetadataType::SongId:
+    case MetadataType::ArtistId:
+    case MetadataType::Empty:
       // Ignore these for now. They are not printable strings.
       break;
     default:

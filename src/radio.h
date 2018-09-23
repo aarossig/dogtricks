@@ -98,6 +98,11 @@ class Radio : public Transport::EventHandler,
   };
 
   /**
+   * Obtains a string description for a supplied signal strength byte.
+   */
+  static const char *GetSignalDescription(uint8_t value);
+
+  /**
    * Setup the radio object with the desired link.
    * 
    * @param path The path to the serial device to communicate with.
@@ -177,6 +182,41 @@ class Radio : public Transport::EventHandler,
                                 size_t payload_size) override;
 
  private:
+  /**
+   * The various types of metadata that can be sent.
+   */
+  enum class MetadataType : uint8_t {
+    Artist = 0x01,
+    Title = 0x02,
+    Album = 0x03,
+    RecordLabel = 0x04,
+    Composer = 0x06,
+    AltArtist = 0x07,
+    Comments = 0x08,
+    PromoText1 = 0x20,
+    PromoText2 = 0x21,
+    PromoText3 = 0x22,
+    PromoText4 = 0x23,
+    SongId = 0x86,
+    ArtistId = 0x88,
+    Empty = 0xe0,
+  };
+
+  /**
+   * Possible status codes returned by the radio.
+   */
+  enum class Status : uint16_t {
+    Success = 0,
+  };
+
+  /**
+   * Unpacks a status from the supplied buffer. The length is assumed to be
+   * at least two.
+   */
+  static Status UnpackStatus(const uint8_t *buffer) {
+    return static_cast<Status>(Transport::UnpackUInt16(buffer));
+  }
+
   //! The event handler to invoke with radio state changes.
   EventHandler *event_handler_;
 

@@ -31,21 +31,6 @@
 
 namespace dogtricks {
 
-const char *Transport::GetSignalDescription(uint8_t value) {
-  switch (value) {
-    case 0:
-      return "none";
-    case 1:
-      return "weak";
-     case 2:
-      return "good";
-    case 3:
-      return "excellent";
-    default:
-      return "<invalid>";
-  }
-}
-
 Transport::Transport(const char *path, EventHandler& event_handler)
     : event_handler_(event_handler) {
   fd_ = open(path, O_RDWR | O_NOCTTY);
