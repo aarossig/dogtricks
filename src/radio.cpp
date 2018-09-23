@@ -24,6 +24,11 @@
 
 using namespace std::chrono_literals;
 
+// TODO: A rather glaring problem with this implementation is that the size of
+// the received packet is completely ignored. This means that the radio could
+// return malformed data resulting in an index out of bounds. This should be
+// resolved with more rigorous bounds checking on packet parsing.
+
 namespace dogtricks {
 
 const char *Radio::GetSignalDescription(SignalStrength signal_strength) {
