@@ -46,6 +46,45 @@ void SignalHandler(int signal) {
 }
 
 /**
+ * Logs the supplied event with a two-space indent.
+ *
+ * @param event The event to log.
+ */
+void LogMetadata(const Radio::Metadata& event) {
+  if (event.artist.has_value()) {
+    LOGD("  artist: %s", event.artist.value().c_str());
+  }
+
+  if (event.title.has_value()) {
+    LOGD("  title: %s", event.title.value().c_str());
+  }
+
+  if (event.album.has_value()) {
+    LOGD("  album: %s", event.album.value().c_str());
+  }
+
+  if (event.record_label.has_value()) {
+    LOGD("  record label: %s", event.record_label.value().c_str());
+  }
+
+  if (event.composer.has_value()) {
+    LOGD("  composer: %s", event.composer.value().c_str());
+  }
+
+  if (event.alt_artist.has_value()) {
+    LOGD("  alt artist: %s", event.alt_artist.value().c_str());
+  }
+
+  if (event.comments.has_value()) {
+    LOGD("  comments: %s", event.comments.value().c_str());
+  }
+
+  for (size_t i = 0; i < event.promo_text.size(); i++) {
+    LOGD("  promo %zu: %s", i, event.promo_text[i].c_str());
+  }
+}
+
+/**
  * An implementation of the radio event handler for the command line tool.
  */
 class RadioEventHandler : public Radio::EventHandler {
@@ -54,38 +93,7 @@ class RadioEventHandler : public Radio::EventHandler {
                                 const Radio::Metadata& event) override {
     LOGD("Metadata changed:");
     LOGD("  channel_id: %" PRId8, channel_id);
-
-    if (event.artist.has_value()) {
-      LOGD("  artist: %s", event.artist.value().c_str());
-    }
-
-    if (event.title.has_value()) {
-      LOGD("  title: %s", event.title.value().c_str());
-    }
-
-    if (event.album.has_value()) {
-      LOGD("  album: %s", event.album.value().c_str());
-    }
-
-    if (event.record_label.has_value()) {
-      LOGD("  record label: %s", event.record_label.value().c_str());
-    }
-
-    if (event.composer.has_value()) {
-      LOGD("  composer: %s", event.composer.value().c_str());
-    }
-
-    if (event.alt_artist.has_value()) {
-      LOGD("  alt artist: %s", event.alt_artist.value().c_str());
-    }
-
-    if (event.comments.has_value()) {
-      LOGD("  comments: %s", event.comments.value().c_str());
-    }
-
-    for (size_t i = 0; i < event.promo_text.size(); i++) {
-      LOGD("  promo %zu: %s", i, event.promo_text[i].c_str());
-    }
+    LogMetadata(event);
   }
 };
 
@@ -124,6 +132,9 @@ int main(int argc, char **argv) {
     success &= radio.Reset();
   }
 
+  // TODO: Move some of these implementation details into helper functions to
+  // help reduce the length of this function.
+
   // Ensure that the radio is in full power mode.
   radio.SetPowerMode(Radio::PowerState::FullMode);
 
@@ -143,7 +154,19 @@ int main(int argc, char **argv) {
   if (success && list_channels_arg.isSet()) {
     Radio::ChannelList channels;
     success &= radio.GetChannelList(&channels);
-    // TODO: Log the received data.
+    for (uint8_t channel : channels) {
+      Radio::ChannelDescriptor desc;
+      success &= radio.GetChannelDescriptor(channel, &desc);
+      if (success) {
+        LOGI("Channel %" PRId8 ":", desc.channel_id);
+        LOGI("  category id: %" PRId8 ":", desc.category_id);
+        LOGI("  short name: %s", desc.short_name.c_str());
+        LOGI("  long name: %s", desc.long_name.c_str());
+        LOGI("  short category name: %s", desc.short_category_name.c_str());
+        LOGI("  long category name: %s", desc.long_category_name.c_str());
+        LogMetadata(desc.metadata);
+      }
+    }
   }
 
   if (success && log_global_metadata_arg.isSet()) {

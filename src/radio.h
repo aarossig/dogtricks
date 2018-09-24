@@ -226,6 +226,12 @@ class Radio : public Transport::EventHandler,
    */
   bool GetChannelList(ChannelList *channels);
 
+  /**
+   * Obtains the details of the supplied channel and populates the descriptor
+   * if successful.
+   */
+  bool GetChannelDescriptor(uint8_t channel_id, ChannelDescriptor *descriptor);
+
  protected:
   // Transport::EventHandler methods.
   virtual void OnPacketReceived(Transport::OpCode op_code,
@@ -298,6 +304,19 @@ class Radio : public Transport::EventHandler,
    * @return true if successful, false otherwise.
    */
   bool SetMonitoringState();
+
+  /**
+   * Parses a metadata payload into a metadata object. It is assumed
+   * that the first byte of the payload contains the number of fields in the
+   * metadata.
+   *
+   * @param payload The payload to parse.
+   * @param size The size of the payload.
+   * @param data The data to populate with parsed information.
+   * @return true on successful, false otherwise (example: short packet).
+   */
+  bool ParseMetadata(const uint8_t *payload, size_t size,
+                     Metadata *data);
 
   /**
    * Parses a metadata packet and posts an event to the event handler with the

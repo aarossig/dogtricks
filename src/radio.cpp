@@ -149,13 +149,65 @@ bool Radio::GetChannelList(ChannelList *channels) {
     auto status = UnpackStatus(response);
     success = (status == Status::Success);
     if (!success) {
-      LOGE("Get channel list request failed with 0x%04", PRIx16, status);
+      LOGE("Get channel list request failed with 0x%04" PRIx16, status);
     } else {
-      uint8_t channel_count = response[0];
-      channels->resize(channel_count);
+      uint8_t channel_count = response[2];
       for (uint8_t i = 0; i < channel_count; i++) {
-        channels->push_back(response[1 + i]);
+        channels->push_back(response[3 + i]);
       }
+    }
+  }
+
+  return success;
+}
+
+bool Radio::GetChannelDescriptor(uint8_t channel_id,
+                                 ChannelDescriptor *descriptor) {
+  uint8_t request[] = {
+    channel_id,
+    0 /* direction: direct */,
+    0 /* use category: no */,
+    0 /* overrides */,
+  };
+  uint8_t response[UINT8_MAX];
+  bool success = SendCommand(
+      Transport::OpCode::GetChannelRequest,
+      Transport::OpCode::GetChannelResponse,
+      request, sizeof(request), response, sizeof(response), 100ms);
+  if (success) {
+    auto status = UnpackStatus(response);
+    success = (status == Status::Success);
+    if (!success) {
+      LOGE("Get channel request failed with 0x%04" PRIx16, status);
+    } else {
+      descriptor->channel_id = response[2];
+      descriptor->category_id = response[4];
+
+      size_t offset = 7;
+      size_t length = response[offset++];
+      descriptor->short_name = std::string(
+          reinterpret_cast<const char *>(&response[offset]), length);
+
+      offset += length;
+      length = response[offset++];
+      descriptor->long_name = std::string(
+          reinterpret_cast<const char *>(&response[offset]), length);
+
+      offset += length;
+      length = response[offset++];
+      descriptor->short_category_name = std::string(
+          reinterpret_cast<const char *>(&response[offset]), length);
+
+      offset += length;
+      length = response[offset++];
+      descriptor->long_category_name = std::string(
+          reinterpret_cast<const char *>(&response[offset]), length);
+
+      // TODO: Pass in the length of the packet. This is bypassed for now as
+      // the sie of the response is not currently passed back after sending a
+      // command.
+      offset += length;
+      ParseMetadata(&response[offset], SIZE_MAX, &descriptor->metadata);
     }
   }
 
@@ -202,16 +254,14 @@ bool Radio::SetMonitoringState() {
   return success;
 }
 
-void Radio::HandleMetadataPacket(const uint8_t *payload, size_t size) {
-  if (size < 2) {
+bool Radio::ParseMetadata(const uint8_t *payload, size_t size,
+                          Metadata *data) {
+  bool success = (size >= 2);
+  if (!success) {
     LOGE("Short metadata packet");
   } else {
-    Metadata event;
-    uint8_t channel_id = payload[0];
-
-    bool success = true;
-    uint8_t field_count = payload[1];
-    size_t parsing_offset = 2;
+    uint8_t field_count = payload[0];
+    size_t parsing_offset = 1;
     for (uint8_t i = 0; i < field_count; i++) {
       if ((parsing_offset + 1) >= size) {
         LOGE("Short metadata packet");
@@ -228,12 +278,22 @@ void Radio::HandleMetadataPacket(const uint8_t *payload, size_t size) {
       }
 
       auto *str = reinterpret_cast<const char *>(&payload[parsing_offset]);
-      PopulateMetadataEventField(&event, str_type, std::string(str, length));
+      PopulateMetadataEventField(data, str_type, std::string(str, length));
       parsing_offset += length;
     }
+  }
 
-    if (success) {
-      event_handler_->OnMetadataChange(channel_id, event);
+  return success;
+}
+
+void Radio::HandleMetadataPacket(const uint8_t *payload, size_t size) {
+  if (size < 2) {
+    LOGE("Short metadata packet");
+  } else {
+    Metadata data;
+    uint8_t channel_id = payload[0];
+    if (ParseMetadata(&payload[1], size - 1, &data)) {
+      event_handler_->OnMetadataChange(channel_id, data);
     }
   }
 }
