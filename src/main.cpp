@@ -85,6 +85,30 @@ void LogMetadata(const Radio::Metadata& event) {
 }
 
 /**
+ * Logs the supplied channel descriptor.
+ *
+ * @param desc The descriptor to log.
+ */
+void LogChannelDescriptor(const Radio::ChannelDescriptor& desc) {
+  LOGI("Channel %" PRId8 ":", desc.channel_id);
+  LOGI("  category id: %" PRId8 ":", desc.category_id);
+  LOGI("  short name: %s", desc.short_name.c_str());
+  LOGI("  long name: %s", desc.long_name.c_str());
+  LOGI("  short category name: %s", desc.short_category_name.c_str());
+  LOGI("  long category name: %s", desc.long_category_name.c_str());
+  LogMetadata(desc.metadata);
+}
+
+void LogSignalStrength(Radio::SignalStrength summary,
+                       Radio::SignalStrength satellite,
+                       Radio::SignalStrength terrestrial) {
+  LOGI("Signal strength:");
+  LOGI("  summary: %s", Radio::GetSignalDescription(summary));
+  LOGI("  satellite: %s", Radio::GetSignalDescription(satellite));
+  LOGI("  terrestrial: %s", Radio::GetSignalDescription(terrestrial));
+}
+
+/**
  * An implementation of the radio event handler for the command line tool.
  */
 class RadioEventHandler : public Radio::EventHandler {
@@ -132,9 +156,6 @@ int main(int argc, char **argv) {
     success &= radio.Reset();
   }
 
-  // TODO: Move some of these implementation details into helper functions to
-  // help reduce the length of this function.
-
   // Ensure that the radio is in full power mode.
   radio.SetPowerMode(Radio::PowerState::FullMode);
 
@@ -144,10 +165,7 @@ int main(int argc, char **argv) {
     Radio::SignalStrength terrestrial;
     success &= radio.GetSignalStrength(&summary, &satellite, &terrestrial);
     if (success) {
-      LOGI("Signal strength:");
-      LOGI("  summary: %s", Radio::GetSignalDescription(summary));
-      LOGI("  satellite: %s", Radio::GetSignalDescription(satellite));
-      LOGI("  terrestrial: %s", Radio::GetSignalDescription(terrestrial));
+      LogSignalStrength(summary, satellite, terrestrial);
     } 
   }
 
@@ -158,13 +176,7 @@ int main(int argc, char **argv) {
       Radio::ChannelDescriptor desc;
       success &= radio.GetChannelDescriptor(channel, &desc);
       if (success) {
-        LOGI("Channel %" PRId8 ":", desc.channel_id);
-        LOGI("  category id: %" PRId8 ":", desc.category_id);
-        LOGI("  short name: %s", desc.short_name.c_str());
-        LOGI("  long name: %s", desc.long_name.c_str());
-        LOGI("  short category name: %s", desc.short_category_name.c_str());
-        LOGI("  long category name: %s", desc.long_category_name.c_str());
-        LogMetadata(desc.metadata);
+        LogChannelDescriptor(desc);
       }
     }
   }
