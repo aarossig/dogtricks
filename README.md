@@ -21,17 +21,21 @@ features of the radio.
 Obtain a complete documentation by passing ``--help``. Here are some flags that
 can be passed to the tool:
 
-    USAGE:
+    USAGE: 
     
-       ./dogtricks  [--set_channel <channel>] [--list_channels]
-                    [--log_global_metadata] [--log_signal_strength] [--reset]
-                    [--path <path>] [--] [--version] [-h]
+       ./src/dogtricks  [--set_channel <channel>] [--get_channel <channel>]
+                        [--list_channels] [--log_global_metadata]
+                        [--log_signal_strength] [--reset] [--path <path>] [--]
+                        [--version] [-h]
     
     
-    Where:
+    Where: 
     
        --set_channel <channel>
          sets the channel that the radio is decoding
+    
+       --get_channel <channel>
+         gets the channel descriptor and logs it
     
        --list_channels
          logs the list of channels available

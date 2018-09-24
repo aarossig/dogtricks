@@ -134,6 +134,9 @@ int main(int argc, char **argv) {
       "logs all changes in channel metadata", cmd);
   TCLAP::SwitchArg list_channels_arg("", "list_channels",
       "logs the list of channels available", cmd);
+  TCLAP::ValueArg<int> get_channel_arg("", "get_channel",
+      "gets the channel descriptor and logs it",
+      false /* req */, 51 /* unce unce unce */, "channel", cmd);
   TCLAP::ValueArg<int> set_channel_arg("", "set_channel",
       "sets the channel that the radio is decoding",
       false /* req */, 51 /* eurobeat intensifies */, "channel", cmd);
@@ -184,6 +187,14 @@ int main(int argc, char **argv) {
   if (success && log_global_metadata_arg.isSet()) {
     success &= radio.SetGlobalMetadataMonitoringEnabled(true);
     quit = false;
+  }
+
+  if (success && get_channel_arg.isSet()) {
+    Radio::ChannelDescriptor desc;
+    success &= radio.GetChannelDescriptor(get_channel_arg.getValue(), &desc);
+    if (success) {
+      LogChannelDescriptor(desc);
+    }
   }
 
   if (success && set_channel_arg.isSet()) {
